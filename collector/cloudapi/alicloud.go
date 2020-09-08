@@ -2,6 +2,7 @@ package cloudapi
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -51,13 +52,19 @@ func SyncAlicloudInstances() {
 			fmt.Fprint(os.Stderr, errMsg)
 			panic(errMsg)
 		}
-		fmt.Println(response.Instances)
+		// fmt.Println(response.GetHttpContentString())
 		instances = append(instances, response.Instances.Instance...)
 	}
 	fmt.Println(len(instances))
     insertInstances := make([]interface{},len(instances))
+
     for i, v := range instances {
-    	insertInstances[i] = v
+    	m := make(map[string]interface{})
+    	j, _ := json.Marshal(v)
+    	json.Unmarshal(j, &m)
+    	delete(m, "Cpu")
+    	m["_id"] = m["InstanceId"]
+    	insertInstances[i] = m
 	}
     collection := global.MongodbClient.Database("infrastructure").Collection("alicloud_instance")
     ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
