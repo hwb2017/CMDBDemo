@@ -7,6 +7,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hwb2017/CMDBDemo/global"
+	"github.com/hwb2017/CMDBDemo/utils"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"os"
 	"strconv"
 	"time"
@@ -57,6 +60,7 @@ func SyncAlicloudInstances() {
 	}
 	fmt.Println(len(instances))
     insertInstances := make([]interface{},len(instances))
+    insertInstanceIds := make([]string,len(instances))
 
     for i, v := range instances {
     	m := make(map[string]interface{})
@@ -65,16 +69,46 @@ func SyncAlicloudInstances() {
     	delete(m, "Cpu")
     	m["_id"] = m["InstanceId"]
     	insertInstances[i] = m
+    	insertInstanceIds[i] = fmt.Sprintf("%v", m["_id"])
 	}
-    collection := global.MongodbClient.Database("infrastructure").Collection("alicloud_instance")
-    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-    defer cancel()
-    _, err = collection.InsertMany(ctx, insertInstances)
-    if err != nil {
+
+	// 对比待插入实例的ID和数据库中已有实例的ID
+	currentInstanceIds := make([]string,0)
+	collection := global.MongodbClient.Database("infrastructure").Collection("alicloud_instance")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	opts := options.Find().SetProjection(bson.D{{"_id", 1}})
+	cursor, err := collection.Find(ctx, bson.D{}, opts)
+	if err != nil {
 		errMsg := fmt.Sprintf("Failed to insert data to mongodb: %v\n", err)
 		fmt.Fprint(os.Stderr, errMsg)
 		panic(errMsg)
 	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		var result bson.M
+		err := cursor.Decode(&result)
+		currentInstanceIds = append(currentInstanceIds, fmt.Sprintf("%v", result["_id"]))
+		if err != nil {fmt.Fprintf(os.Stderr, "Failed to parse mongodb document: %v\n", err)}
+	}
+	if err := cursor.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to parse mongodb document: %v\n", err)
+	}
+
+	addInstances := utils.StrSliceDiff(insertInstanceIds, currentInstanceIds)
+	delInstances := utils.StrSliceDiff(currentInstanceIds, insertInstanceIds)
+	fmt.Println(addInstances, delInstances)
+
+
+    //collection = global.MongodbClient.Database("infrastructure").Collection("alicloud_instance")
+    //ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+    //defer cancel()
+    //_, err = collection.InsertMany(ctx, insertInstances)
+    //if err != nil {
+	//	errMsg := fmt.Sprintf("Failed to insert data to mongodb: %v\n", err)
+	//	fmt.Fprint(os.Stderr, errMsg)
+	//	panic(errMsg)
+	//}
 
 }
 
