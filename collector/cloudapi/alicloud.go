@@ -97,7 +97,9 @@ func SyncAlicloudInstances() {
 
 	addInstances := utils.StrSliceDiff(insertInstanceIds, currentInstanceIds)
 	delInstances := utils.StrSliceDiff(currentInstanceIds, insertInstanceIds)
+	updateInstances := utils.StrSliceIntersection(currentInstanceIds, insertInstanceIds)
 	fmt.Println(addInstances, delInstances)
+	fmt.Println(len(updateInstances))
 
 
     //collection = global.MongodbClient.Database("infrastructure").Collection("alicloud_instance")
