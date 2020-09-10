@@ -9,6 +9,7 @@ import (
 	"github.com/hwb2017/CMDBDemo/global"
 	"github.com/hwb2017/CMDBDemo/utils"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"os"
 	"strconv"
@@ -35,7 +36,7 @@ func SyncAlicloudInstances() {
 	}
     totalCount := response.TotalCount
     pageCount := (totalCount/100)+1
-    instances := make([]ecs.Instance, 0)
+    rawInstances := make([]ecs.Instance, 0)
 
     for pageNumber := 1; pageNumber <=pageCount; pageNumber++ {
 		request := ecs.CreateDescribeInstancesRequest()
@@ -56,29 +57,31 @@ func SyncAlicloudInstances() {
 			panic(errMsg)
 		}
 		// fmt.Println(response.GetHttpContentString())
-		instances = append(instances, response.Instances.Instance...)
+		rawInstances = append(rawInstances, response.Instances.Instance...)
 	}
-	fmt.Println(len(instances))
-    insertInstances := make([]interface{},len(instances))
-    insertInstanceIds := make([]string,len(instances))
-
-    for i, v := range instances {
-    	m := make(map[string]interface{})
+    instancesMapping := make(map[string]interface{},len(rawInstances))
+    for _, v := range rawInstances {
+    	instanceAttr := make(map[string]interface{})
     	j, _ := json.Marshal(v)
-    	json.Unmarshal(j, &m)
-    	delete(m, "Cpu")
-    	m["_id"] = m["InstanceId"]
-    	insertInstances[i] = m
-    	insertInstanceIds[i] = fmt.Sprintf("%v", m["_id"])
+    	json.Unmarshal(j, &instanceAttr)
+    	delete(instanceAttr, "Cpu")
+    	instanceId := fmt.Sprintf("%v", instanceAttr["InstanceId"])
+    	instanceAttr["_id"] = instanceId
+    	instanceAttr["_syncTime"] = time.Now().Format("2006-01-02 15:04:05")
+    	instancesMapping[instanceId] = instanceAttr
+	}
+	instanceIds := make([]string, 0, len(instancesMapping))
+	for k, _ := range instancesMapping {
+		instanceIds = append(instanceIds, k)
 	}
 
 	// 对比待插入实例的ID和数据库中已有实例的ID
-	currentInstanceIds := make([]string,0)
+	storedInstanceIds := make([]string, 0, len(instancesMapping))
 	collection := global.MongodbClient.Database("infrastructure").Collection("alicloud_instance")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	opts := options.Find().SetProjection(bson.D{{"_id", 1}})
-	cursor, err := collection.Find(ctx, bson.D{}, opts)
+	findOpts := options.Find().SetProjection(bson.D{{"_id", 1}})
+	cursor, err := collection.Find(ctx, bson.D{}, findOpts)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to insert data to mongodb: %v\n", err)
 		fmt.Fprint(os.Stderr, errMsg)
@@ -88,30 +91,48 @@ func SyncAlicloudInstances() {
 	for cursor.Next(ctx) {
 		var result bson.M
 		err := cursor.Decode(&result)
-		currentInstanceIds = append(currentInstanceIds, fmt.Sprintf("%v", result["_id"]))
+		storedInstanceIds = append(storedInstanceIds, fmt.Sprintf("%v", result["_id"]))
 		if err != nil {fmt.Fprintf(os.Stderr, "Failed to parse mongodb document: %v\n", err)}
 	}
 	if err := cursor.Err(); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to parse mongodb document: %v\n", err)
 	}
 
-	addInstances := utils.StrSliceDiff(insertInstanceIds, currentInstanceIds)
-	delInstances := utils.StrSliceDiff(currentInstanceIds, insertInstanceIds)
-	updateInstances := utils.StrSliceIntersection(currentInstanceIds, insertInstanceIds)
-	fmt.Println(addInstances, delInstances)
-	fmt.Println(len(updateInstances))
+	insertInstanceIds := utils.StrSliceDiff(instanceIds, storedInstanceIds)
+	deleteInstanceIds := utils.StrSliceDiff(storedInstanceIds, instanceIds)
+	updateInstanceIds := utils.StrSliceIntersection(storedInstanceIds, instanceIds)
 
+	bulkOpInstanceNum := len(insertInstanceIds) + len(deleteInstanceIds) + len(updateInstanceIds)
+	bulkWriteModels := make([]mongo.WriteModel, 0, bulkOpInstanceNum)
+	//设置批量操作中要插入的部分
+	for _, v := range insertInstanceIds {
+		instance := instancesMapping[v]
+		model := mongo.NewInsertOneModel().SetDocument(instance)
+		bulkWriteModels = append(bulkWriteModels, model)
+	}
+	// 设置批量操作中要删除的部分
+	for _, v := range deleteInstanceIds {
+	    model := mongo.NewDeleteOneModel().SetFilter(bson.M{"_id": v})
+		bulkWriteModels = append(bulkWriteModels, model)
+	}
+	// 设置批量操作中要更新的部分
+	for _, v := range updateInstanceIds {
+	    instance := instancesMapping[v]
+	    model := mongo.NewReplaceOneModel().SetFilter(bson.M{"_id": v}).SetReplacement(instance)
+		bulkWriteModels = append(bulkWriteModels, model)
+	}
 
-    //collection = global.MongodbClient.Database("infrastructure").Collection("alicloud_instance")
-    //ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
-    //defer cancel()
-    //_, err = collection.InsertMany(ctx, insertInstances)
-    //if err != nil {
-	//	errMsg := fmt.Sprintf("Failed to insert data to mongodb: %v\n", err)
-	//	fmt.Fprint(os.Stderr, errMsg)
-	//	panic(errMsg)
-	//}
-
+    collection = global.MongodbClient.Database("infrastructure").Collection("alicloud_instance")
+    ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+    defer cancel()
+	bulkWriteOpts := options.BulkWrite().SetOrdered(false)
+    res, err := collection.BulkWrite(ctx, bulkWriteModels, bulkWriteOpts)
+    if err != nil {
+		errMsg := fmt.Sprintf("Failed to bulk write to mongodb: %v\n", err)
+		fmt.Fprint(os.Stderr, errMsg)
+		panic(errMsg)
+	}
+	fmt.Printf("插入 %v 个，删除 %v 个，匹配 %v 个\n", res.InsertedCount, res.DeletedCount, res.MatchedCount)
 }
 
 func timeoutCheck(start time.Time) {
