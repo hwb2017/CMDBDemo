@@ -1,13 +1,13 @@
 import request from "@/utils/request";
 
 const state = {
-  virtualmachines = [];
+  virtualmachines: []
 };
 
 const actions = {
   async getVirtualMachines({ commit }) {
     const response = await request({
-      url: "baseApi/virtualMachine/ListVMBasicView",
+      url: "/baseApi/virtualMachine/ListVMBasicView",
       method: "get"
     });
     commit('saveVirtualMachines', response);

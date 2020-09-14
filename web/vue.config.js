@@ -17,5 +17,13 @@ module.exports = {
         '@': resolve('src')
       }
     }
+  },
+  devServer: {
+    proxy: {
+      ['baseApi']: {
+        target: `http://localhost:8081`,
+        changeOrigin: true
+      }
+    }
   }
 }
