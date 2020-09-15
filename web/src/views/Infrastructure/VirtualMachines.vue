@@ -1,26 +1,12 @@
 <template>
   <div :style="{ padding: '24px', background: '#fff', minHeight: '360px', margin: '24px 8px'}">
-    <a-button type="link" @click="getVirtualMachines">Bill is a cat.</a-button>
-    <a-table :columns="columns" :data-source="data">
-      <a slot="name" slot-scope="text">{{ text }}</a>
-      <span slot="customTitle"><a-icon type="smile-o" /> Name</span>
-      <span slot="tags" slot-scope="tags">
-        <a-tag
-          v-for="tag in tags"
-          :key="tag"
-          :color="tag === 'loser' ? 'volcano' : tag.length > 5 ? 'geekblue' : 'green'"
-        >
-          {{ tag.toUpperCase() }}
-        </a-tag>
-      </span>
-      <span slot="action" slot-scope="text, record">
-        <a>Invite 一 {{ record.name }}</a>
-        <a-divider type="vertical" />
-        <a>Delete</a>
-        <a-divider type="vertical" />
-        <a class="ant-dropdown-link"> More actions <a-icon type="down" /> </a>
-      </span>
-    </a-table>    
+    <a-table :columns="columns" :data-source="virtualmachines" :row-key="record => record.InstanceID">
+      <span slot="Provider">阿里云</span>
+      <div slot="IpAddress" slot-scope="record">
+        <p v-if="record.PublicIpAddress">{{ record.PublicIpAddress }} (公网)</p>
+        <p>{{ record.PrivateIpAddress }} (内网)</p>
+      </div>
+    </a-table>
   </div>
 </template>
 
@@ -28,69 +14,50 @@
 import { mapActions } from 'vuex';
 const columns = [
   {
-    dataIndex: 'name',
-    key: 'name',
-    slots: { title: 'customTitle' },
-    scopedSlots: { customRender: 'name' },
+    key: 'Provider',    
+    title: '提供商',
+    scopedSlots: { customRender: 'Provider' },
   },
   {
-    title: 'Age',
-    dataIndex: 'age',
-    key: 'age',
+    key: 'InstanceName',
+    dataIndex: 'InstanceName',
+    title: '主机名称',    
   },
   {
-    title: 'Address',
-    dataIndex: 'address',
-    key: 'address',
+    key: 'OSName',
+    dataIndex: 'OSName',
+    title: '操作系统', 
   },
   {
-    title: 'Tags',
-    key: 'tags',
-    dataIndex: 'tags',
-    scopedSlots: { customRender: 'tags' },
+    key: 'IpAddress',    
+    title: 'IP地址',
+    scopedSlots: { customRender: 'IpAddress' },
   },
   {
-    title: 'Action',
-    key: 'action',
-    scopedSlots: { customRender: 'action' },
-  },
-];
-
-const data = [
-  {
-    key: '1',
-    name: 'John Brown',
-    age: 32,
-    address: 'New York No. 1 Lake Park',
-    tags: ['nice', 'developer'],
-  },
-  {
-    key: '2',
-    name: 'Jim Green',
-    age: 42,
-    address: 'London No. 1 Lake Park',
-    tags: ['loser'],
-  },
-  {
-    key: '3',
-    name: 'Joe Black',
-    age: 32,
-    address: 'Sidney No. 1 Lake Park',
-    tags: ['cool', 'teacher'],
-  },
+    key: 'InstanceType',
+    dataIndex: 'InstanceType',
+    title: '实例类型'
+  }
 ];
 export default {
   data() {
     return {
-      data,
       columns,
     };
+  },
+  computed: {
+    virtualmachines() {
+      return this.$store.state.infra.virtualmachines
+    }
   },
   methods: {
     ...mapActions({
       'getVirtualMachines': 'infra/getVirtualMachines'
     })
   },
+  mounted: function() {
+    this.getVirtualMachines();
+  }
 };  
 </script>
 

@@ -13,6 +13,7 @@ import (
 )
 
 type vmBasicView struct  {
+	InstanceID string `json:instance_id`
 	InstanceType string `json:instance_type`
 	InstanceName string `json:instance_name`
 	OSName string `json:osname`
@@ -27,7 +28,6 @@ func ListVMBasicView(c * gin.Context) {
 	// EipAddress.IpAddress PublicIpAddress.IpAddress[0] InstanceName OSName InstanceType NetworkInterfaces.NetworkInterface[0].PrimaryIpAddress
 	projectionStage := bson.D{
 		{"$project",bson.D{
-			{"_id",0},
 			{"PublicIpAddress", bson.D{
 				{"$arrayElemAt", bson.A{
 					"$PublicIpAddress.IpAddress", 0},
@@ -63,6 +63,7 @@ func ListVMBasicView(c * gin.Context) {
 			publicIpAddress = result["EipIpAddress"].(string)
 		}
 		vm := vmBasicView{
+			InstanceID: result["_id"].(string),
 			InstanceType: result["InstanceType"].(string),
 			InstanceName: result["InstanceName"].(string),
 			OSName: result["OSName"].(string),

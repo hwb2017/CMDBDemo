@@ -16,7 +16,7 @@ const actions = {
 
 const mutations = {
   saveVirtualMachines(state, { data }) {
-    state.virtualmachines = data;
+    state.virtualmachines = data["data"];
   }
 };
 
