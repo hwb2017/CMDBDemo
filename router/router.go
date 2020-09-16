@@ -2,7 +2,8 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
-	v1 "github.com/hwb2017/CMDBDemo/router/baseApi/v1"
+	bv1 "github.com/hwb2017/CMDBDemo/router/baseApi/v1"
+	ov1 "github.com/hwb2017/CMDBDemo/router/openApi/v1"
 )
 
 func InitRouter() *gin.Engine{
@@ -11,6 +12,10 @@ func InitRouter() *gin.Engine{
 
 	baseApi := root.Group("baseApi")
 	vm := baseApi.Group("virtualMachine")
-	vm.GET("ListVMBasicView", v1.ListVMBasicView)
+	vm.GET("ListVMBasicView", bv1.ListVMBasicView)
+
+	openApi := root.Group("openApi")
+	vmLifecycle := openApi.Group("vmLifecycle")
+	vmLifecycle.POST("CreateVMLifecycle", ov1.CreateVMLifecycleStrategy)
 	return r
 }
