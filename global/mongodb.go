@@ -23,7 +23,7 @@ func InitMongoDB() {
 	var err error
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	MongodbClient, err = mongo.Connect(ctx, options.Client().ApplyURI("mongodb://10.200.111.84:27017"))
+	MongodbClient, err = mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to create mongodb client: %v\n", err)
 		fmt.Fprint(os.Stderr, errMsg)

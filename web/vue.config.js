@@ -23,7 +23,11 @@ module.exports = {
       ['baseApi']: {
         target: `http://localhost:8081`,
         changeOrigin: true
-      }
+      },
+      ['openApi']: {
+        target: `http://localhost:8081`,
+        changeOrigin: true
+      }      
     }
   }
 }

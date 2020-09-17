@@ -6,14 +6,32 @@
       :tab-list="tabList"
       :active-tab-key="key"
       @tabChange="key => onTabChange(key, 'key')"
+      v-for="item in vmLifecycles"
+      :key="item._id"
     >
       <a slot="extra" href="#">More</a>
-      {{ contentList[key] }}
+      <div v-if="key == 'tab1'">
+        <a-descriptions layout="vertical">
+          <a-descriptions-item label="申请人">
+            {{ item.Applicant }}
+          </a-descriptions-item>
+          <a-descriptions-item label="维护者">
+            {{ item.Maintainer }}
+          </a-descriptions-item>
+          <a-descriptions-item label="申请到期时间">
+            2020-09-30
+          </a-descriptions-item>         
+        </a-descriptions>
+      </div>
+      <div v-else>
+        关联主机信息...
+      </div>
     </a-card>
   </div>
 </template>
 
 <script>
+import { mapActions } from 'vuex';  
 export default {
   data() {
     return {
@@ -27,18 +45,25 @@ export default {
           tab: '关联主机',
         },
       ],
-      contentList: {
-        tab1: '申请人：Carol         维护者：Kevin\n申请到期时间：2020年10月8日',
-        tab2: '关联主机信息...',
-      },
       key: 'tab1',
     };
+  },
+  computed: {
+    vmLifecycles() {
+      return this.$store.state.infra.vmLifecycles
+    }
   },
   methods: {
     onTabChange(key, type) {
       this[type] = key;
     },
+    ...mapActions({
+      'getVMLifecycles': 'infra/getVMLifecycles'
+    })
   },
+  mounted: function() {
+    this.getVMLifecycles();
+  }
 };
 </script>
 

@@ -16,6 +16,7 @@ func InitRouter() *gin.Engine{
 
 	openApi := root.Group("openApi")
 	vmLifecycle := openApi.Group("vmLifecycle")
+	vmLifecycle.GET("ListVMLifecycle", ov1.ListVMLifecycle)
 	vmLifecycle.POST("CreateVMLifecycle", ov1.CreateVMLifecycleStrategy)
 	return r
 }
