@@ -6,9 +6,12 @@
   >
     <a-sub-menu key="sub1">
       <span slot="title"><a-icon type="database" /><span>基础设施管理</span></span>
-      <a-menu-item key="1">
+      <a-menu-item key="1" @click="routeToVirtualMachines">
         虚拟机
       </a-menu-item>
+      <a-menu-item key="10" @click="routeToVMLifecycle">
+        虚拟机生命周期
+      </a-menu-item>      
       <a-menu-item key="2">
         对象存储
       </a-menu-item>
@@ -63,6 +66,12 @@ export default {
         }
       }
       return menuData;
+    },
+    routeToVirtualMachines() {
+        this.$router.push({path:"/infrastructure/virtualmachines"})
+    },
+    routeToVMLifecycle() {
+        this.$router.push({path:"/infrastructure/vmlifecycles"})
     }
   }
 }

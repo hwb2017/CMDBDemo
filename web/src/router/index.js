@@ -25,7 +25,14 @@ const routes = [
             meta: { title: "虚拟机" },
             component: () => 
               import("@/views/Infrastructure/VirtualMachines")
-          }
+          },
+          {
+            path: "/infrastructure/vmlifecycles",
+            name: "vmlifecycles",
+            meta: { title: "虚拟机生命周期" },
+            component: () => 
+              import("@/views/Infrastructure/VMLifecycles")
+          },          
         ]
       }
     ]
