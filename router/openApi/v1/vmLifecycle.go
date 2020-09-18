@@ -21,7 +21,7 @@ const (
 
 type VMLifecycleRule struct {
 	Operation VMOperation `json:"operation"`
-	ActionTime time.Time `json:"actionTime"`
+	ActionTime string `json:"actionTime"`
 }
 
 type VMLifecycleRequest struct {
@@ -97,8 +97,8 @@ func ListVMLifecycle(c *gin.Context) {
 	defer cursor.Close(ctx)
 
 	var results []bson.M
-	var result bson.M
 	for cursor.Next(ctx) {
+		var result bson.M
 	    err := cursor.Decode(&result)
 		if err != nil {fmt.Fprintf(os.Stderr, "Failed to parse mongodb document: %v\n", err)}
 	    results = append(results, result)

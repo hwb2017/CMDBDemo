@@ -2,7 +2,7 @@
   <div :style="{ padding: '24px', background: '#fff', minHeight: '360px', margin: '24px 8px'}">
     <a-card
       style="width:100%"
-      title="Carol的主机申请-20200917"
+      :title="`${item.Applicant}的主机申请(${item.CreationTime})`"
       :tab-list="tabList"
       :active-tab-key="key"
       @tabChange="key => onTabChange(key, 'key')"
@@ -19,7 +19,7 @@
             {{ item.Maintainer }}
           </a-descriptions-item>
           <a-descriptions-item label="申请到期时间">
-            2020-09-30
+            {{ item.VMLifecycleRules[0].actiontime }}
           </a-descriptions-item>         
         </a-descriptions>
       </div>
