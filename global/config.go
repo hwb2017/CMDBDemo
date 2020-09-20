@@ -7,6 +7,7 @@ import (
 var (
 	DatabaseConfiguration config.DatabaseConfig
 	ServerConfiguration config.ServerConfig
+	LogConfiguration config.LogConfig
 	CloudApiConfiguration config.CloudApiConfig
 )
 
@@ -20,6 +21,7 @@ func InitConfiguration() {
 	if err != nil {
 		panic(err)
 	}
+	configuration.ReadSection("Log", &LogConfiguration)
 	envConfig := config.ReadEnvVars()
 	CloudApiConfiguration = envConfig.CloudApiConfig
 }
