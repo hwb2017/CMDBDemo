@@ -3,28 +3,17 @@ package cloudapi
 import (
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/hwb2017/CMDBDemo/global"
 	"os"
 )
 
 var (
-	alicloudAccessKey string
-	alicloudAccessSecret string
 	alicloudClient *ecs.Client
 )
 
-func mustGetEnv(key string) string {
-	value, present := os.LookupEnv(key)
-	if !present {
-		errMsg := fmt.Sprintf("Environment variable %s not exists!\n", key)
-		fmt.Fprint(os.Stderr, errMsg)
-		panic(errMsg)
-	}
-	return value
-}
-
 func init() {
-	alicloudAccessKey = mustGetEnv("ALICLOUD_ACCESS_KEY")
-	alicloudAccessSecret = mustGetEnv("ALICLOUD_ACCESS_SECRET")
+	alicloudAccessKey := global.CloudApiConfiguration.AliCloudAccessKey
+	alicloudAccessSecret := global.CloudApiConfiguration.AliCloudAccessSecret
 	var err error
 	alicloudClient, err = ecs.NewClientWithAccessKey("cn-hangzhou", alicloudAccessKey, alicloudAccessSecret)
 	if err != nil {
