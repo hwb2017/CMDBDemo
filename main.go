@@ -5,7 +5,8 @@ import (
 	"github.com/hwb2017/CMDBDemo/router"
 )
 
-func initialization() {
+func init() {
+	global.InitConfiguration()
     global.InitMongoDB()
 }
 
@@ -14,7 +15,6 @@ func gracefulExit() {
 }
 
 func main() {
-     initialization()
      defer gracefulExit()
 
      //cloudapi.SyncAlicloudInstances()
@@ -25,5 +25,5 @@ func main() {
      //select {}
 
      r := router.InitRouter()
-     r.Run(":8081")
+     r.Run(global.ServerConfiguration.Host)
 }
