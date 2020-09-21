@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hwb2017/CMDBDemo/global"
+	"github.com/hwb2017/CMDBDemo/service"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
@@ -31,49 +32,23 @@ type VMLifecycleRequest struct {
 	VMIDs []string `json:"vmIDs"`
 }
 
-// CreateVMLifecycleStrategy create vmLifecycleStrategy and association with virtual machines
-func CreateVMLifecycleStrategy(c *gin.Context) {
-    // Maintainer, Applicant, Rules, VMs
-	vmLifecycleReq := VMLifecycleRequest{}
+// CreateVMLifecycle create vmLifecycleStrategy and association with virtual machines
+func CreateVMLifecycle(c *gin.Context) {
+	vmLifecycleReq := &service.CreateVMLifecycleRequest{}
     c.ShouldBindJSON(&vmLifecycleReq)
-
-	vmLifecycleCollection := global.MongodbClient.Database("infrastructure").Collection("vm_lifecycle")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	vmLifecycle := bson.D{
-		{"VMLifecycleRules", vmLifecycleReq.VMLifecycleRules},
-		{"Applicant", vmLifecycleReq.Applicant},
-		{"Maintainer", vmLifecycleReq.Maintainer},
-		{"CreationTime", time.Now().Format("2006-01-02 15:04:05")},
-		{"UpdateTime", time.Now().Format("2006-01-02 15:04:05")},
-	}
-	res, err := vmLifecycleCollection.InsertOne(ctx, vmLifecycle)
+	svc := service.New()
+	err := svc.CreateVMLifecycle(vmLifecycleReq)
 	if err != nil {
-		errMsg := fmt.Sprintf("Failed to insert to mongodb: %v\n", err)
-		fmt.Fprint(os.Stderr, errMsg)
-		panic(errMsg)
-	}
-
-	vmLifecycleID := res.InsertedID
-	vmLifecycleAssociations := make([]interface{},0)
-    for _, vmID := range vmLifecycleReq.VMIDs {
-    	vmLifecycleAssociations = append(vmLifecycleAssociations, bson.D{
-    		{"VMLifecycleID",vmLifecycleID},
-    		{"VMID", vmID},
+		global.Logger.Errorf("CreateVMLifecycle err: %v", err)
+		c.JSON(http.StatusOK,gin.H{
+			"code": 500,
 		})
-	}
-	vmLifecycleAssociationCollection := global.MongodbClient.Database("infrastructure").Collection("vm_lifecycle_association")
-	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	_, err = vmLifecycleAssociationCollection.InsertMany(ctx, vmLifecycleAssociations)
-	if err != nil {
-		errMsg := fmt.Sprintf("Failed to insert to mongodb: %v\n", err)
-		fmt.Fprint(os.Stderr, errMsg)
-		panic(errMsg)
+		return
 	}
 	c.JSON(http.StatusOK,gin.H{
 		"code": 200,
 	})
+	return
 }
 
 func ListVMLifecycle(c *gin.Context) {

@@ -1,11 +1,10 @@
-package infrastructure
+package model
 
 import (
 	"context"
 	"fmt"
-	"github.com/hwb2017/CMDBDemo/global"
-	"go.mongodb.org/mongo-driver/bson"
-	"os"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"strings"
 	"time"
 )
@@ -38,22 +37,16 @@ type VMLifecycle struct {
 	Applicant string `json:"applicant"`
 	VMLifecycleRules []VMLifecycleRule `json:"vm_lifecycle_rules"`
 	VMIDs []string `json:"vm_ids"`
+	CreateTime time.Time `json:"create_time"`
+	UpdateTime time.Time `json:"update_time"`
 }
 
-func (v *VMLifecycle) Create() {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	vmLifecycle := bson.D{
-		{"VMLifecycleRules", vmLifecycleReq.VMLifecycleRules},
-		{"Applicant", vmLifecycleReq.Applicant},
-		{"Maintainer", vmLifecycleReq.Maintainer},
-		{"CreationTime", time.Now().Format("2006-01-02 15:04:05")},
-		{"UpdateTime", time.Now().Format("2006-01-02 15:04:05")},
-	}
-	res, err := vmLifecycleCollection.InsertOne(ctx, vmLifecycle)
+func (v VMLifecycle) Create(client * mongo.Client) (resultID string, err error) {
+	vmLifecycleCollection := VMLifecycleCollection.mongoCollection()
+	result, err := vmLifecycleCollection.InsertOne(context.TODO(), v)
 	if err != nil {
-		errMsg := fmt.Sprintf("Failed to insert to mongodb: %v\n", err)
-		fmt.Fprint(os.Stderr, errMsg)
-		panic(errMsg)
+        return "", err
 	}
+	resultID = result.InsertedID.(primitive.ObjectID).String()
+	return resultID, nil
 }
