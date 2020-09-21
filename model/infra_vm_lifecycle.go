@@ -27,6 +27,8 @@ func ParseVMOperation(op string) (VMOperation, error) {
 	return vmOp, fmt.Errorf("not a valid vm operation")
 }
 
+type VMLifecycleCollection struct {}
+
 type VMLifecycleRule struct {
 	Operation VMOperation `json:"operation"`
 	ActionTime time.Time `json:"action_time"`
@@ -41,9 +43,13 @@ type VMLifecycle struct {
 	UpdateTime time.Time `json:"update_time"`
 }
 
-func (v VMLifecycle) Create(client * mongo.Client) (resultID string, err error) {
-	vmLifecycleCollection := VMLifecycleCollection.mongoCollection()
-	result, err := vmLifecycleCollection.InsertOne(context.TODO(), v)
+func (v VMLifecycleCollection) mongodbCollection(client * mongo.Client) *mongo.Collection{
+	return client.Database("infrastructure").Collection("vm_lifecycle")
+}
+
+func (v VMLifecycleCollection) Create(client * mongo.Client, doc VMLifecycle) (resultID string, err error) {
+	collection := v.mongodbCollection(client)
+	result, err := collection.InsertOne(context.TODO(), doc)
 	if err != nil {
         return "", err
 	}
