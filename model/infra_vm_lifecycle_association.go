@@ -9,8 +9,8 @@ import (
 type VMLifecycleAssociationCollection struct {}
 
 type VMLifecycleAssociation struct {
-	VMLifecycleID string
-	VMID string
+	VMLifecycleID string `json:"vm_lifecycle_id"`
+	VMID string `json:"vm_id"`
 }
 
 func (v VMLifecycleAssociationCollection) mongodbCollection(client * mongo.Client) *mongo.Collection{

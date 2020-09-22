@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"strings"
@@ -55,4 +56,32 @@ func (v VMLifecycleCollection) Create(client * mongo.Client, doc VMLifecycle) (r
 	}
 	resultID = result.InsertedID.(primitive.ObjectID).String()
 	return resultID, nil
+}
+
+func (v VMLifecycleCollection) ListWithAssociation(client *mongo.Client) (results []bson.M,err error) {
+	collection := v.mongodbCollection(client)
+	lookupStage := bson.D{
+		{"$lookup",bson.D{
+			{"from", "vm_lifecycle_association"},
+			{"localField", "_id"},
+			{"foreignField", "VMLifecycleID"},
+			{"as", "associated_vm_ids"},
+		},
+		}}
+	cursor, err := collection.Aggregate(context.TODO(), mongo.Pipeline{lookupStage})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.TODO())
+
+	for cursor.Next(context.TODO()) {
+		var result bson.M
+		err := cursor.Decode(&result)
+		if err != nil {return nil, err}
+		results = append(results, result)
+	}
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
 }

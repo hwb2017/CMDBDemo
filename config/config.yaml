@@ -3,7 +3,7 @@ Server:
 Database:
   Username:
   Password:
-  Host: 10.200.111.84:27017
+  Host: localhost:27017
   DBName:
 Log:
   Level: INFO

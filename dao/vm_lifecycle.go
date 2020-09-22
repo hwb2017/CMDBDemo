@@ -5,8 +5,9 @@ import (
 	"time"
 )
 
+var vmLifecycleCollection = model.VMLifecycleCollection{}
+
 func (d *Dao) CreateVMLifecycle(applicant, maintainer string, vmIds []string, rules []model.VMLifecycleRule) (resultID string, err error) {
-	vmLifecycleCollection := model.VMLifecycleCollection{}
 	vmLifecycle := model.VMLifecycle{
 		Applicant: applicant,
 		Maintainer: maintainer,
@@ -16,4 +17,8 @@ func (d *Dao) CreateVMLifecycle(applicant, maintainer string, vmIds []string, ru
 		UpdateTime: time.Now(),
 	}
 	return vmLifecycleCollection.Create(d.client, vmLifecycle)
+}
+
+func (d *Dao) ListVMLifecycle() (interface{}, error) {
+	return vmLifecycleCollection.ListWithAssociation(d.client)
 }

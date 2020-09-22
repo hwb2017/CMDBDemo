@@ -33,3 +33,7 @@ func (s *Service) CreateVMLifecycle(param *CreateVMLifecycleRequest) error{
 	}
     return nil
 }
+
+func (s *Service) ListVMLifecycle() (interface{}, error) {
+	return s.dao.ListVMLifecycle()
+}
