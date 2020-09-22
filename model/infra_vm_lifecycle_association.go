@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"github.com/hwb2017/CMDBDemo/utils"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -13,12 +14,13 @@ type VMLifecycleAssociation struct {
 }
 
 func (v VMLifecycleAssociationCollection) mongodbCollection(client * mongo.Client) *mongo.Collection{
-	return client.Database("infrastructure").Collection("vm_lifecycle")
+	return client.Database("infrastructure").Collection("vm_lifecycle_association")
 }
 
 func (v VMLifecycleAssociationCollection) BulkCreate(client *mongo.Client, docs []VMLifecycleAssociation) error {
 	vmLifecycleAssociationCollection := v.mongodbCollection(client)
-	_, err := vmLifecycleAssociationCollection.InsertMany(context.TODO(), docs)
+	documents := utils.InterfaceSlice(docs)
+	_, err := vmLifecycleAssociationCollection.InsertMany(context.TODO(), documents)
 	if err != nil {
 		return err
 	}

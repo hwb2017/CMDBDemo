@@ -1,6 +1,8 @@
 package service
 
-import "github.com/hwb2017/CMDBDemo/model"
+import (
+	"github.com/hwb2017/CMDBDemo/model"
+)
 
 type CreateVMLifecycleRequest struct {
 	Maintainer string `json:"maintainer"`
@@ -18,11 +20,16 @@ func (s *Service) CreateVMLifecycle(param *CreateVMLifecycleRequest) error{
     if err != nil {
     	return err
 	}
-	for _, vmID := range param.VMIDs {
-		err = s.dao.CreateVMLifecycleAssociation(vmLifecycleID, vmID)
-		if err != nil {
-			return err
-		}
+	vmLifecycleAssociations := make([]model.VMLifecycleAssociation ,len(param.VMIDs))
+	for i := 0; i < len(param.VMIDs); i++ {
+		vmLifecycleAssociations[i] = model.VMLifecycleAssociation{
+			VMLifecycleID: vmLifecycleID,
+			VMID: param.VMIDs[i],
+			}
+	}
+	err = s.dao.CreateVMLifecycleAssociations(vmLifecycleAssociations)
+	if err != nil {
+		return err
 	}
     return nil
 }

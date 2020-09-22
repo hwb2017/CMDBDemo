@@ -6,6 +6,7 @@ import (
 )
 
 func (d *Dao) CreateVMLifecycle(applicant, maintainer string, vmIds []string, rules []model.VMLifecycleRule) (resultID string, err error) {
+	vmLifecycleCollection := model.VMLifecycleCollection{}
 	vmLifecycle := model.VMLifecycle{
 		Applicant: applicant,
 		Maintainer: maintainer,
@@ -14,5 +15,5 @@ func (d *Dao) CreateVMLifecycle(applicant, maintainer string, vmIds []string, ru
 		CreateTime: time.Now(),
 		UpdateTime: time.Now(),
 	}
-	return vmLifecycle.Create(d.client)
+	return vmLifecycleCollection.Create(d.client, vmLifecycle)
 }

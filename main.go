@@ -25,7 +25,6 @@ func main() {
      //defer global.StopCronjobRunner()
      //select {}
 
-     global.Logger.Info("test")
      r := router.InitRouter()
      r.Run(global.ServerConfiguration.Host)
 }
