@@ -3,8 +3,9 @@ package v1
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/hwb2017/CMDBDemo/global"
+	"github.com/hwb2017/CMDBDemo/lib/app"
+	"github.com/hwb2017/CMDBDemo/lib/errcode"
 	"github.com/hwb2017/CMDBDemo/service"
-	"net/http"
 )
 
 type VMOperation int
@@ -30,33 +31,27 @@ type VMLifecycleRequest struct {
 func CreateVMLifecycle(c *gin.Context) {
 	vmLifecycleReq := &service.CreateVMLifecycleRequest{}
     c.ShouldBindJSON(&vmLifecycleReq)
+	response := app.NewResponse(c)
 	svc := service.New()
 	err := svc.CreateVMLifecycle(vmLifecycleReq)
 	if err != nil {
 		global.Logger.Errorf("CreateVMLifecycle err: %v", err)
-		c.JSON(http.StatusOK,gin.H{
-			"code": 500,
-		})
+		response.ToErrorResponse(errcode.ErrorCreateVMLifecycle)
 		return
 	}
-	c.JSON(http.StatusOK,gin.H{
-		"code": 200,
-	})
+	response.ToResponse(gin.H{})
 	return
 }
 
 func ListVMLifecycle(c *gin.Context) {
+	response := app.NewResponse(c)
 	svc := service.New()
 	results, err := svc.ListVMLifecycle()
 	if err != nil {
 		global.Logger.Errorf("ListVMLifecycle err: %v", err)
-		c.JSON(http.StatusOK,gin.H{
-			"code": 500,
-		})
+		response.ToErrorResponse(errcode.ErrorListVMLifecycle)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"data": results,
-	})
+	response.ToResponse(results)
 	return
 }
