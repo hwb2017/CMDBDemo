@@ -9,21 +9,16 @@ func init() {
 	global.InitConfiguration()
 	global.InitLogger()
     global.InitMongoDB()
+	global.InitCronjobRunner()
 }
 
 func gracefulExit() {
     global.DisConnectMongodb()
+    global.StopCronjobRunner()
 }
 
 func main() {
      defer gracefulExit()
-
-     //cloudapi.SyncAlicloudInstances()
-     //global.InitCronjobRunner()
-     //cron.RegisterCronFuncs(global.CronjobRunner)
-     //global.StartCronjobRunner()
-     //defer global.StopCronjobRunner()
-     //select {}
 
      r := router.InitRouter()
      r.Run(global.ServerConfiguration.Host)
