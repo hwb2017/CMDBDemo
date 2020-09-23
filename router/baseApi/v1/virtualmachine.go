@@ -11,7 +11,7 @@ import (
 func ListVMBasicView(c * gin.Context) {
 	response := app.NewResponse(c)
 	svc := service.New()
-	vms, err := svc.ListBasicView()
+	vms, err := svc.ListVMBasicView()
 	if err != nil {
 		global.Logger.Errorf("ListVMBasicView err: %v", err)
 		response.ToErrorResponse(errcode.ErrorListVMBasicView)

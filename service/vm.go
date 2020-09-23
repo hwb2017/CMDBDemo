@@ -1,5 +1,5 @@
 package service
 
-func (s *Service) ListBasicView() (interface{}, error) {
+func (s *Service) ListVMBasicView() (interface{}, error) {
 	return s.dao.ListVMBasicView()
 }
