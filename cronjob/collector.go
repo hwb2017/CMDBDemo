@@ -1,5 +1,7 @@
 package cronjob
 
-func SyncInstances() {
+import "github.com/hwb2017/CMDBDemo/lib/cloudapi"
 
+func SyncInstances() {
+    cloudapi.SyncAlicloudInstances()
 }
