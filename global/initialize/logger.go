@@ -1,7 +1,8 @@
-package global
+package initialize
 
 import (
 	"fmt"
+	"github.com/hwb2017/CMDBDemo/global"
 	"github.com/hwb2017/CMDBDemo/utils"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -10,20 +11,16 @@ import (
 
 const LOGNAME = "cmdb"
 
-var (
-	Logger *logrus.Logger
-)
-
 func InitLogger() {
 	logger := logrus.New()
 	logger.Formatter = new(logrus.JSONFormatter)
 	logger.Level = setupLogLevel()
 	logger.Out = setupLogPath()
-	Logger = logger
+	global.Logger = logger
 }
 
 func setupLogLevel() logrus.Level {
-	switch LogConfiguration.Level {
+	switch global.LogConfiguration.Level {
 	case "DEBUG":
 		return logrus.DebugLevel
 	case "INFO":
@@ -42,7 +39,7 @@ func setupLogLevel() logrus.Level {
 }
 
 func setupLogPath() io.Writer {
-	logPath := LogConfiguration.Path
+	logPath := global.LogConfiguration.Path
 	if logPath == "" {
 		return os.Stdout
 	}

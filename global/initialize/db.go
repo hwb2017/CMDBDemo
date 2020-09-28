@@ -1,8 +1,9 @@
-package global
+package initialize
 
 import (
 	"context"
 	"fmt"
+	"github.com/hwb2017/CMDBDemo/global"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -10,11 +11,9 @@ import (
 	"time"
 )
 
-var MongodbClient *mongo.Client
-
 func DisConnectMongodb() {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	if err := MongodbClient.Disconnect(ctx); err != nil {
+	if err := global.MongodbClient.Disconnect(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -24,16 +23,16 @@ func InitMongoDB() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	var mongodbURI string
-	if DatabaseConfiguration.Username == "" && DatabaseConfiguration.Password == "" {
-		mongodbURI = fmt.Sprintf("mongodb://%s",DatabaseConfiguration.Host)
+	if global.DatabaseConfiguration.Username == "" && global.DatabaseConfiguration.Password == "" {
+		mongodbURI = fmt.Sprintf("mongodb://%s",global.DatabaseConfiguration.Host)
 	} else {
 		mongodbURI = fmt.Sprintf("mongodb://%s:%s@%s/%s",
-			DatabaseConfiguration.Username,
-			DatabaseConfiguration.Password,
-			DatabaseConfiguration.Host,
-			DatabaseConfiguration.DBName)
+			global.DatabaseConfiguration.Username,
+			global.DatabaseConfiguration.Password,
+			global.DatabaseConfiguration.Host,
+			global.DatabaseConfiguration.DBName)
 	}
-	MongodbClient, err = mongo.Connect(ctx, options.Client().ApplyURI(mongodbURI))
+	global.MongodbClient, err = mongo.Connect(ctx, options.Client().ApplyURI(mongodbURI))
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to create mongodb client: %v\n", err)
 		fmt.Fprint(os.Stderr, errMsg)
@@ -42,7 +41,7 @@ func InitMongoDB() {
 
 	ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	err = MongodbClient.Ping(ctx, readpref.Primary())
+	err = global.MongodbClient.Ping(ctx, readpref.Primary())
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to ping mongodb instance: %v\n", err)
 		fmt.Fprint(os.Stderr, errMsg)

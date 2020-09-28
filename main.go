@@ -2,19 +2,20 @@ package main
 
 import (
 	"github.com/hwb2017/CMDBDemo/global"
+	"github.com/hwb2017/CMDBDemo/global/initialize"
 	"github.com/hwb2017/CMDBDemo/router"
 )
 
 func init() {
-	global.InitConfiguration()
-	global.InitLogger()
-    global.InitMongoDB()
-	global.InitCronjobRunner()
+	initialize.InitConfiguration()
+	initialize.InitLogger()
+    initialize.InitMongoDB()
+	initialize.InitCronjobRunner()
 }
 
 func gracefulExit() {
-    global.DisConnectMongodb()
-    global.StopCronjobRunner()
+    initialize.DisConnectMongodb()
+    initialize.StopCronjobRunner()
 }
 
 func main() {
