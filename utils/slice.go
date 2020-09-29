@@ -34,7 +34,7 @@ func StrSliceIntersection(a , b []string) (diff []string) {
 	return diff
 }
 
-// InterfaceSlice converting sliece of type to slice of interface
+// InterfaceSlice converting slice of type to slice of interface
 func InterfaceSlice(slice interface{}) []interface{} {
 	s := reflect.ValueOf(slice)
 	if s.Kind() != reflect.Slice {
