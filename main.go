@@ -1,9 +1,8 @@
 package main
 
 import (
-	"github.com/hwb2017/CMDBDemo/global"
+	"github.com/hwb2017/CMDBDemo/cronjob"
 	"github.com/hwb2017/CMDBDemo/global/initialize"
-	"github.com/hwb2017/CMDBDemo/router"
 )
 
 func init() {
@@ -21,6 +20,7 @@ func gracefulExit() {
 func main() {
      defer gracefulExit()
 
-     r := router.InitRouter()
-     r.Run(global.ServerConfiguration.Host)
+     cronjob.SyncInstances()
+     //r := router.InitRouter()
+     //r.Run(global.ServerConfiguration.Host)
 }

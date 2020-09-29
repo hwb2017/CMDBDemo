@@ -7,13 +7,13 @@ import (
 	"strconv"
 )
 
-func DescribeAlicloudInstances() ([]interface{} ,error) {
+func (a *AliCloud) DescribeInstances() ([]interface{} ,error) {
 	request := ecs.CreateDescribeInstancesRequest()
 	request.Scheme = "https"
 	request.RegionId = "cn-shanghai"
 	request.PageSize = "1"
 
-	response, err := alicloudClient.DescribeInstances(request)
+	response, err := a.Client.DescribeInstances(request)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func DescribeAlicloudInstances() ([]interface{} ,error) {
 		request.PageSize = "100"
 		request.PageNumber = requests.Integer(strconv.Itoa(pageNumber))
 
-		response, err := alicloudClient.DescribeInstances(request)
+		response, err := a.Client.DescribeInstances(request)
 		if err != nil {
 			return nil, err
 		}

@@ -7,10 +7,15 @@ import (
 
 func SyncInstances() {
     svc := service.New()
-    err := svc.SyncAlicloudInstances()
+    err := svc.SyncAliCloudInstances()
     if err != nil {
-		global.Logger.Errorf("SyncAlicloudInstances err: %v", err)
+		global.Logger.Errorf("SyncAliCloudInstances err: %v", err)
     	return
+	}
+    err = svc.SyncAWSInstances()
+	if err != nil {
+		global.Logger.Errorf("SyncAWSInstances err: %v", err)
+		return
 	}
 	return
 }
