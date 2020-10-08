@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-var vmLifecycleCollection = model.VMLifecycleCollection{}
+var vmLifecycleCollection = &model.VMLifecycleCollection{}
 
 func (d *Dao) CreateVMLifecycle(applicant, maintainer string, vmIds []string, rules []model.VMLifecycleRule) (resultID string, err error) {
 	vmLifecycle := model.VMLifecycle{

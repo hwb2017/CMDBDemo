@@ -14,6 +14,9 @@ func (a *AWS) DescribeInstances() ([]interface{}, error){
 	if err != nil {
         return nil, err
 	}
-	rawInstances := result.Reservations[0].Instances
+	rawInstances := make([]*ec2.Instance, 0)
+	for _, reservation := range result.Reservations{
+		rawInstances = append(rawInstances, reservation.Instances...)
+	}
 	return utils.InterfaceSlice(rawInstances), nil
 }

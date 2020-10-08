@@ -5,6 +5,6 @@ import (
 )
 
 func RegisterDefaultCronJobs(c *cron.Cron) {
-	c.AddFunc("@every 1m", SyncInstances)
-	c.AddFunc("@every 1m", ScanAndExecuteVMLifecycle)
+	c.AddFunc("0 0 * * *", SyncInstances)
+	c.AddFunc("0 0 * * *", ScanAndExecuteVMLifecycle)
 }

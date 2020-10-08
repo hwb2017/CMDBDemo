@@ -14,12 +14,12 @@ func New(client *mongo.Client) *Dao {
 	return &Dao{client: client}
 }
 
-func (d *Dao) FindWithProjection(dbName, collectionName string, fields ...string) ([]bson.M, error){
+func (d *Dao) Find(dbName, collectionName string, queryOptions *model.QueryOptions) ([]bson.M, error){
 	collection := model.Collection{
 		DBName: dbName,
 		CollectionName: collectionName,
 	}
-	return collection.FindWithProjection(d.client, fields...)
+	return collection.Find(d.client, queryOptions)
 }
 
 func (d *Dao) BulkSync(dbName, collectionName string, bulkSyncModels model.BulkSyncModels) error {

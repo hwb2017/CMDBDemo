@@ -25,6 +25,20 @@ func (r *Response)ToResponse(data interface{}) {
 	})
 }
 
+func (r *Response)ToResponseList(data interface{}, totalRows int) {
+	if data == nil {
+		data = gin.H{}
+	}
+	r.Ctx.JSON(http.StatusOK, gin.H{
+		"data": data,
+		"pagination": Pagination{
+			PageNumber: GetPageNumber(r.Ctx),
+			PageSize: GetPageSize(r.Ctx),
+			TotalRows: totalRows,
+		},
+	})
+}
+
 func (r *Response)ToErrorResponse(err *errcode.Error) {
 	response := gin.H{
 		"code": err.Code(),

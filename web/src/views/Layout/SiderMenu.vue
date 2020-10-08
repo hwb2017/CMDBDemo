@@ -1,9 +1,25 @@
 <template>
   <a-menu 
     theme="dark" 
-    :default-selected-keys="['1']" 
+    :defaultSelectedKeys="['1']" 
+    :defaultOpenKeys="['sub1']"
     mode="inline"
   >
+    <template v-for="item in menuData">
+      <a-menu-item 
+        v-if="!item.children"
+        :key="item.name"
+        @click="() => $router.push({ path: item.path, query: $route.query })"
+      >
+        {{ item.meta.title }}
+      </a-menu-item>
+      <sub-menu
+        v-else
+        :key="item.name"
+        :menu-info="item"
+      >
+      </sub-menu>
+    </template>
     <a-sub-menu key="sub1">
       <span slot="title"><a-icon type="database" /><span>基础设施管理</span></span>
       <a-menu-item key="1" @click="routeToVirtualMachines">
@@ -50,9 +66,13 @@
 </template>
 
 <script>
+import SubMenu from "./SubMenu";
 export default {
+  components: {
+    "sub-menu": SubMenu
+  }, 
   data() {
-    const menuData = this.getMenuData(this.$router.options.routes); 
+    const menuData = this.getMenuData(this.$router.options.routes);
     return {
       menuData
     };
@@ -62,16 +82,28 @@ export default {
       const menuData = [];
       for (let item of routes) {
         if (item.name && !item.hideInMenu) {
-          console.log(item)
+            const menuitem = { ...item };
+            delete menuitem.children;
+            menuData.push(item);
+            if (item.children) {
+              menuData.push(...this.getMenuData(item.children));
+            }
+        } else if (
+          item.children &&
+          !item.hideInMenu
+        ) {
+          menuData.push(...this.getMenuData(item.children));
         }
       }
       return menuData;
     },
     routeToVirtualMachines() {
         this.$router.push({path:"/infrastructure/virtualmachines"})
+        console.log(this.menuData);
     },
     routeToVMLifecycle() {
         this.$router.push({path:"/infrastructure/vmlifecycles"})
+        console.log(this.menuData);
     }
   }
 }

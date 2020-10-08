@@ -10,8 +10,12 @@ import (
 	"time"
 )
 
-func (s *Service) ListVMBasicView() (interface{}, error) {
-	return s.dao.ListVMBasicView()
+func (s *Service) ListVMBasicView(queryOptions *model.QueryOptions) (interface{}, error) {
+	return s.dao.ListVMBasicView(queryOptions)
+}
+
+func (s *Service) CountVM(queryOptions *model.QueryOptions) (int, error) {
+	return s.dao.CountVM(queryOptions)
 }
 
 func (s *Service) SyncAliCloudInstances() error {
@@ -40,7 +44,9 @@ func (s *Service) SyncAliCloudInstances() error {
 	}
 
 	storedInstanceIds := make([]string, 0, len(instancesMapping))
-	res, err := s.dao.FindWithProjection("infrastructure","alicloud_instance", "_id")
+	queryOptions := &model.QueryOptions{}
+	queryOptions.WithSimpleProjection("_id")
+	res, err := s.dao.Find("infrastructure","alicloud_instance", queryOptions)
 	if err != nil {
 		return err
 	}
@@ -86,9 +92,10 @@ func (s *Service) SyncAWSInstances() error{
 		instancesMapping[instanceId] = instanceAttr
 		instanceIds = append(instanceIds, instanceId)
 	}
-
 	storedInstanceIds := make([]string, 0, len(instancesMapping))
-	res, err := s.dao.FindWithProjection("infrastructure","aws_instance", "_id")
+	queryOptions := &model.QueryOptions{}
+	queryOptions.WithSimpleProjection("_id")
+	res, err := s.dao.Find("infrastructure","aws_instance", queryOptions)
 	if err != nil {
 		return err
 	}

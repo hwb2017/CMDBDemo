@@ -50,7 +50,7 @@ func (s *MySuite) TearDownSuite(c *C) {
 }
 
 func (s *MySuite) TestListBasic(c *C) {
-	_, err := s.svc.ListVMBasicView()
+	_, err := s.svc.ListVMBasicView(&model.QueryOptions{})
 	c.Assert(err, IsNil)
 }
 

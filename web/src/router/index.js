@@ -34,6 +34,28 @@ const routes = [
               import("@/views/Infrastructure/VMLifecycles")
           },          
         ]
+      },
+      {
+        path: "/setting",
+        name: "setting",
+        meta: { icon: "setting", title: "系统设置" },
+        component: { render: h => h("router-view") },
+        children: [
+          {
+            path: "/setting/permission",
+            name: "permission",
+            meta: { title: "权限管理" },
+            component: () =>
+              import("@/views/Setting/Permission")
+          },
+          {
+            path: "/setting/cloudApi",
+            name: "cloudapi",
+            meta: { title: "云API管理" },
+            component: () =>
+              import("@/views/Setting/CloudApi")
+          }
+        ]
       }
     ]
   }

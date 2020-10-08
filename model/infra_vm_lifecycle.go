@@ -28,7 +28,9 @@ func ParseVMOperation(op string) (VMOperation, error) {
 	return vmOp, fmt.Errorf("not a valid vm operation")
 }
 
-type VMLifecycleCollection struct {}
+type VMLifecycleCollection struct {
+	Collection
+}
 
 type VMLifecycleRule struct {
 	Operation VMOperation `json:"operation"`
@@ -44,11 +46,12 @@ type VMLifecycle struct {
 	UpdateTime time.Time `json:"update_time"`
 }
 
-func (v VMLifecycleCollection) mongodbCollection(client * mongo.Client) *mongo.Collection{
-	return client.Database("infrastructure").Collection("vm_lifecycle")
+func (v *VMLifecycleCollection) setup() {
+	v.DBName = "infrastructure"
+	v.CollectionName = "vm_lifecycle"
 }
 
-func (v VMLifecycleCollection) Create(client * mongo.Client, doc VMLifecycle) (resultID string, err error) {
+func (v *VMLifecycleCollection) Create(client * mongo.Client, doc VMLifecycle) (resultID string, err error) {
 	collection := v.mongodbCollection(client)
 	result, err := collection.InsertOne(context.TODO(), doc)
 	if err != nil {
@@ -58,7 +61,8 @@ func (v VMLifecycleCollection) Create(client * mongo.Client, doc VMLifecycle) (r
 	return resultID, nil
 }
 
-func (v VMLifecycleCollection) ListWithAssociation(client *mongo.Client) (results []bson.M,err error) {
+func (v *VMLifecycleCollection) ListWithAssociation(client *mongo.Client) (interface{}, error) {
+	v.setup()
 	collection := v.mongodbCollection(client)
 	lookupStage := bson.D{
 		{"$lookup",bson.D{
@@ -72,16 +76,5 @@ func (v VMLifecycleCollection) ListWithAssociation(client *mongo.Client) (result
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(context.TODO())
-
-	for cursor.Next(context.TODO()) {
-		var result bson.M
-		err := cursor.Decode(&result)
-		if err != nil {return nil, err}
-		results = append(results, result)
-	}
-	if err := cursor.Err(); err != nil {
-		return nil, err
-	}
-	return results, nil
+	return v.handleCursor(cursor)
 }

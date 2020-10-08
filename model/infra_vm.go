@@ -6,86 +6,159 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type vmBasicView struct  {
-	VMProvider string `json:"vm_provider"`
-	InstanceID string `json:"instance_id"`
-	InstanceType string `json:"instance_type"`
-	InstanceName string `json:"instance_name"`
-	OSName string `json:"os_name"`
-	PublicIpAddress string `json:"public_ip_addresses"`
-	PrivateIpAddress string `json:"private_ip_addresses"`
+type AliCloudInstanceCollection struct {
+	Collection
 }
 
-type AlicloudInstanceCollection struct {}
-
-func (a AlicloudInstanceCollection) mongodbCollection(client * mongo.Client) *mongo.Collection{
-	return client.Database("infrastructure").Collection("alicloud_instance")
+type AWSInstanceCollection struct {
+	Collection
 }
 
-type VMCollection struct{
-	AlicloudInstanceCollection
+func (v *VMCollection) setup() {
+	v.Collection.DBName = "infrastructure"
+	v.Collection.CollectionName = "vm_basic_view"
 }
 
-func (v VMCollection) ListBasicView(client *mongo.Client) (vms []vmBasicView, err error){
-	vms = make([]vmBasicView, 0)
-    alicloudVMs, err := v.AlicloudInstanceCollection.ListBasicView(client)
+func (a *AliCloudInstanceCollection) setup() {
+	a.DBName = "infrastructure"
+	a.CollectionName = "alicloud_instance"
+}
+
+func (a *AWSInstanceCollection) setup() {
+	a.DBName = "infrastructure"
+	a.CollectionName = "aws_instance"
+}
+
+type VMCollection struct {
+	Collection
+	AliCloudInstanceCollection
+	AWSInstanceCollection
+}
+
+func (v *VMCollection) ListBasicView(client *mongo.Client, queryOptions *QueryOptions) (interface{}, error) {
+	v.setup()
+	collection := v.mongodbCollection(client)
+    err := v.AliCloudInstanceCollection.ListBasicView(client, &QueryOptions{})
     if err != nil {
     	return nil, err
 	}
-	vms = append(vms, alicloudVMs...)
-	return vms, err
-}
-
-func (a AlicloudInstanceCollection) ListBasicView(client *mongo.Client) (vms []vmBasicView, err error) {
-	collection := a.mongodbCollection(client)
-	projectionStage := bson.D{
-		{"$project",bson.D{
-			{"PublicIpAddress", bson.D{
-				{"$arrayElemAt", bson.A{
-					"$PublicIpAddress.IpAddress", 0},
-				},
-			}},
-			{"InstanceName",1},
-			{"OSName",1},
-			{"InstanceType",1},
-			{"PrivateIpAddress",bson.D{
-				{"$arrayElemAt",bson.A{
-					"$NetworkInterfaces.NetworkInterface.PrimaryIpAddress",0,
-				}},
-			}},
-			{"EipIpAddress","$EipAddress.IpAddress"},
-		},
-		}}
-	cursor, err := collection.Aggregate(context.TODO(),mongo.Pipeline{projectionStage})
+	err = v.AWSInstanceCollection.ListBasicView(client, &QueryOptions{})
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(context.TODO())
+    cursor, err := v.find(collection, queryOptions)
+	return v.handleCursor(cursor)
+}
 
-	vms = make([]vmBasicView, 0)
-	for cursor.Next(context.TODO()) {
-		var result bson.M
-		var publicIpAddress string
-		err := cursor.Decode(&result)
-		if v, ok := result["PublicIpAddress"]; ok {
-			publicIpAddress = v.(string)
-		} else {
-			publicIpAddress = result["EipIpAddress"].(string)
-		}
-		vm := vmBasicView{
-			VMProvider: "alicloud",
-			InstanceID: result["_id"].(string),
-			InstanceType: result["InstanceType"].(string),
-			InstanceName: result["InstanceName"].(string),
-			OSName: result["OSName"].(string),
-			PrivateIpAddress: result["PrivateIpAddress"].(string),
-			PublicIpAddress: publicIpAddress,
-		}
-		vms = append(vms, vm)
-		if err != nil {return nil, err}
+func (v *VMCollection) Count(client *mongo.Client, queryOptions *QueryOptions) (int, error) {
+	v.setup()
+	collection := v.mongodbCollection(client)
+	total, err := collection.CountDocuments(context.TODO(), queryOptions.filter)
+	if err != nil {
+		return 0, err
 	}
-	if err := cursor.Err(); err != nil {
-		return nil, err
+	return int(total), nil
+}
+
+func (a *AliCloudInstanceCollection) ListBasicView(client *mongo.Client, queryOptions *QueryOptions) error {
+	a.setup()
+	collection := a.mongodbCollection(client)
+	projection := bson.M{
+		"PublicIpAddress": bson.M{
+			"$arrayElemAt": bson.A{"$PublicIpAddress.IpAddress", 0},
+		},
+		"InstanceName": 1,
+		"OSName": 1,
+		"InstanceType": 1,
+		"PrivateIpAddress": bson.M{
+			"$arrayElemAt": bson.A{"$NetworkInterfaces.NetworkInterface.PrimaryIpAddress",0},
+		},
+		"EipIpAddress": "$EipAddress.IpAddress",
 	}
-	return vms, err
+	queryOptions.WithProjection(projection)
+	extendPipelines := make([]bson.D, 0)
+    projectStage := bson.D{{
+        "$project", bson.M{
+			"vm_provider": "alicloud",
+			"instance_id": "$_id",
+			"instance_type": "$InstanceType",
+			"instance_name": "$InstanceName",
+			"os_name": "$OSName",
+			"private_ip_address": "$PrivateIpAddress",
+			"public_ip_address": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$EipIpAddress",bson.TypeNull}},
+					"$EipIpAddress",
+					"$EipIpAddress"},
+			},
+		},
+	}}
+	mergeStage := bson.D{{
+		"$merge", bson.M{
+			"into": "vm_basic_view",
+			"on": "_id",
+			"whenMatched": "replace",
+			"whenNotMatched": "insert",
+		},
+	}}
+	extendPipelines = append(extendPipelines, projectStage, mergeStage)
+	queryOptions.WithExtendAggregationPipelineStages(extendPipelines)
+	_, err := a.aggregate(collection, queryOptions)
+	return err
+}
+
+func (a *AWSInstanceCollection) ListBasicView(client *mongo.Client, queryOptions *QueryOptions) error {
+	a.setup()
+	collection := a.mongodbCollection(client)
+	projection := bson.M{
+		"PublicIpAddress": 1,
+		"Tags": 1,
+		"Platform": 1,
+		"InstanceType": 1,
+		"PrivateIpAddress": 1,
+	}
+	queryOptions.WithProjection(projection)
+	extendPipelines := make([]bson.D, 0)
+	addFieldsStage := bson.D{{
+		"$addFields", bson.M{
+			"instanceName": bson.M{
+				"$filter": bson.M{
+					"input": "$Tags",
+					"as": "tag",
+					"cond": bson.M{
+						"$eq": bson.A{"$$tag.Key", "Name"},
+					},
+				},
+			},
+
+		},
+	}}
+	unwindStage := bson.D{{
+		"$unwind", "$instanceName",
+	}}
+	projectinStage := bson.D{{
+        "$project", bson.M{
+        	"vm_provider": "aws",
+			"instance_id": "$_id",
+			"instance_type": "$InstanceType",
+			"instance_name": "$instanceName.Value",
+			"os_name": bson.M{
+        		"$ifNull": bson.A{"$Platform","Unknown"},
+        		},
+			"private_ip_address": "$PrivateIpAddress",
+			"public_ip_address": "$PublicIpAddress",
+        },
+	}}
+	mergeStage := bson.D{{
+		"$merge", bson.M{
+			"into": "vm_basic_view",
+			"on": "_id",
+			"whenMatched": "replace",
+			"whenNotMatched": "insert",
+		},
+	}}
+	extendPipelines = append(extendPipelines, addFieldsStage, unwindStage, projectinStage, mergeStage)
+	queryOptions.WithExtendAggregationPipelineStages(extendPipelines)
+	_, err := a.aggregate(collection, queryOptions)
+	return err
 }
