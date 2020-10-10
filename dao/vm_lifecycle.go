@@ -19,6 +19,10 @@ func (d *Dao) CreateVMLifecycle(applicant, maintainer string, vmIds []string, ru
 	return vmLifecycleCollection.Create(d.client, vmLifecycle)
 }
 
-func (d *Dao) ListVMLifecycle() (interface{}, error) {
-	return vmLifecycleCollection.ListWithAssociation(d.client)
+func (d *Dao) ListVMLifecycle(queryOptions *model.QueryOptions) (interface{}, error) {
+	return vmLifecycleCollection.ListWithAssociation(d.client, queryOptions)
+}
+
+func (d *Dao) CountVMLifecycle(queryOptions *model.QueryOptions) (int, error) {
+	return vmLifecycleCollection.Count(d.client, queryOptions)
 }

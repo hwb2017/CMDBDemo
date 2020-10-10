@@ -61,9 +61,10 @@ func (v *VMLifecycleCollection) Create(client * mongo.Client, doc VMLifecycle) (
 	return resultID, nil
 }
 
-func (v *VMLifecycleCollection) ListWithAssociation(client *mongo.Client) (interface{}, error) {
+func (v *VMLifecycleCollection) ListWithAssociation(client *mongo.Client, queryOptions *QueryOptions) (interface{}, error) {
 	v.setup()
 	collection := v.mongodbCollection(client)
+	extendPipelines := make([]bson.D, 0)
 	lookupStage := bson.D{
 		{"$lookup",bson.D{
 			{"from", "vm_lifecycle_association"},
@@ -72,9 +73,21 @@ func (v *VMLifecycleCollection) ListWithAssociation(client *mongo.Client) (inter
 			{"as", "associated_vm_ids"},
 		},
 		}}
-	cursor, err := collection.Aggregate(context.TODO(), mongo.Pipeline{lookupStage})
+	extendPipelines = append(extendPipelines, lookupStage)
+	queryOptions.WithExtendAggregationPipelineStages(extendPipelines)
+	cursor, err := v.aggregate(collection, queryOptions)
 	if err != nil {
 		return nil, err
 	}
 	return v.handleCursor(cursor)
+}
+
+func (v *VMLifecycleCollection) Count(client *mongo.Client, queryOptions *QueryOptions) (int, error) {
+	v.setup()
+	collection := v.mongodbCollection(client)
+	total, err := collection.CountDocuments(context.TODO(), queryOptions.filter)
+	if err != nil {
+		return 0, err
+	}
+	return int(total), nil
 }

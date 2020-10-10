@@ -5,6 +5,7 @@ import (
 	"github.com/hwb2017/CMDBDemo/global"
 	"github.com/hwb2017/CMDBDemo/lib/app"
 	"github.com/hwb2017/CMDBDemo/lib/errcode"
+	"github.com/hwb2017/CMDBDemo/model"
 	"github.com/hwb2017/CMDBDemo/service"
 )
 
@@ -46,12 +47,22 @@ func CreateVMLifecycle(c *gin.Context) {
 func ListVMLifecycle(c *gin.Context) {
 	response := app.NewResponse(c)
 	svc := service.New()
-	results, err := svc.ListVMLifecycle()
+	queryOptions := &model.QueryOptions{}
+	queryOptions.WithLimit(app.GetPageSize(c))
+	pageOffset := app.GetOffset(app.GetPageNumber(c), app.GetPageSize(c))
+	queryOptions.WithSkip(pageOffset)
+	results, err := svc.ListVMLifecycle(queryOptions)
 	if err != nil {
 		global.Logger.Errorf("ListVMLifecycle err: %v", err)
 		response.ToErrorResponse(errcode.ErrorListVMLifecycle)
 		return
 	}
-	response.ToResponse(results)
+	totalRows, err := svc.CountVMLifecycle(queryOptions)
+	if err != nil {
+		global.Logger.Errorf("CountVMLifecycle err: %v", err)
+		response.ToErrorResponse(errcode.ErrorListVMLifecycle)
+		return
+	}
+	response.ToResponseList(results, totalRows)
 	return
 }

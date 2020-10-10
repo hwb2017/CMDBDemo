@@ -34,6 +34,10 @@ func (s *Service) CreateVMLifecycle(param *CreateVMLifecycleRequest) error{
     return nil
 }
 
-func (s *Service) ListVMLifecycle() (interface{}, error) {
-	return s.dao.ListVMLifecycle()
+func (s *Service) ListVMLifecycle(queryOptions *model.QueryOptions) (interface{}, error) {
+	return s.dao.ListVMLifecycle(queryOptions)
+}
+
+func (s *Service) CountVMLifecycle(queryOptions *model.QueryOptions) (int, error) {
+	return s.dao.CountVMLifecycle(queryOptions)
 }

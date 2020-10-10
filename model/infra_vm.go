@@ -47,6 +47,9 @@ func (v *VMCollection) ListBasicView(client *mongo.Client, queryOptions *QueryOp
 		return nil, err
 	}
     cursor, err := v.find(collection, queryOptions)
+	if err != nil {
+		return nil, err
+	}
 	return v.handleCursor(cursor)
 }
 
