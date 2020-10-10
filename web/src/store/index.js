@@ -4,9 +4,19 @@ import infra from "./modules/infrastructure";
 
 Vue.use(Vuex);
 
+const state = {
+  menuCollapsed: false
+}
+
+const mutations = {
+  toggleMenuCollapsed(state) {
+    state.menuCollapsed = !state.menuCollapsed;
+  }
+}
+
 export default new Vuex.Store({
-  state: {},
-  mutations: {},
+  state,
+  mutations,
   actions: {},
   modules: {
     infra

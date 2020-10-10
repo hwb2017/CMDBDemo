@@ -11,7 +11,7 @@
     </a-layout-sider>
     <a-layout>
       <a-layout-header style="background: #fff; padding: 0">
-        <a-icon :type="collapsed ? 'menu-unfold' : 'menu-fold'" class="trigger" @click="collapsed = !collapsed"></a-icon>
+        <a-icon :type="collapsed ? 'menu-unfold' : 'menu-fold'" class="trigger" @click="toggleCollapsed"></a-icon>
       </a-layout-header>
       <a-layout-content style="margin: 0 16px">
         <router-view></router-view>
@@ -21,15 +21,27 @@
 </template>
 <script>
 import SiderMenu from "./SiderMenu";
+import { mapState } from 'vuex';
+import { mapMutations } from 'vuex';
 export default {
   components: {
     SiderMenu
   },
-  data() {
-    return {
-      collapsed: false,
-    };
+  watch: {
+    "collapsed": function(val) {
+      console.log('index-collapsed',val)
+    }
   },
+  computed: {
+    ...mapState({
+        collapsed: state => state.menuCollapsed
+    })
+  },
+  methods: {
+    ...mapMutations({
+      toggleCollapsed: 'toggleMenuCollapsed'
+    })
+  }
 };
 </script>
 
