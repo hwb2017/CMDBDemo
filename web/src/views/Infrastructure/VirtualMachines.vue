@@ -82,6 +82,10 @@ const providerMapping = {
   "阿里云": "alicloud",
   "AWS": "aws"
 }
+const placeholderMapping = {
+  "ipAddr": "IP地址",
+  "hostName": "主机名称"
+}
 export default {
   data() {
     return {
@@ -120,7 +124,7 @@ export default {
       'getVirtualMachines': 'infra/getVirtualMachines'
     }),
     changePlaceholder(value) {
-      this.searchItemPlaceholder = `请输入${value}`;
+      this.searchItemPlaceholder = `请输入${placeholderMapping[value]}`;
     },
     handleTagChange(tag, checked) {
       const { selectedTags } = this;

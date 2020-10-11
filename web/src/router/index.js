@@ -29,7 +29,7 @@ const routes = [
           {
             path: "/infrastructure/vmlifecycles",
             name: "vmlifecycles",
-            meta: { title: "虚拟机生命周期" },
+            meta: { title: "虚拟机申请计划" },
             component: () => 
               import("@/views/Infrastructure/VMLifecycles")
           },          
