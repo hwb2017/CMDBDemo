@@ -46,35 +46,55 @@
     </a-card>
     <a-modal v-model="visible" title="添加申请计划" @ok="handleOk">
       <a-form layout='vertical' :form="form">
-        <a-form-item label='Title'>
+        <a-form-item label='申请人'>
           <a-input
             v-decorator="[
-              'title',
+              'applicant',
               {
-                rules: [{ required: true, message: 'Please input the title of collection!' }],
+                rules: [{ required: true, message: '请输入申请人名称' }],
               }
             ]"
           />
         </a-form-item>
-        <a-form-item label='Description'>
+        <a-form-item label='维护人'>
           <a-input
-            type='textarea'
-            v-decorator="['description']"
+            v-decorator="['maintainer']"
           />
         </a-form-item>
-        <a-form-item class='collection-create-form_last-form-item'>
-          <a-radio-group
+        <a-form-item 
+          v-for="(k,index) in form.getFieldValue('vmLifecycleOps')"
+          :key="k"
+          :required=false
+          :label="index === 0 ? 生命周期策略 : ''"
+        >
+          <a-select default-value="stop" style="width: 100px">
+            <a-select-option value="stop">停机</a-select-option>
+            <a-select-option value="destroy">销毁</a-select-option>
+          </a-select>
+          <a-date-picker
             v-decorator="[
-              'modifier',
+              'date-time-picker', 
               {
-                initialValue: 'private',
+                rules: [{ type: 'object', required: true, message: '请选择时间' }],
               }
             ]"
-          >
-              <a-radio value='public'>Public</a-radio>
-              <a-radio value='private'>Private</a-radio>
-            </a-radio-group>
-        </a-form-item>
+            show-time
+            format="YYYY-MM-DD HH:mm:ss"
+            :style="{ margin: '0 8px' }"
+          />
+          <a-icon
+             type="plus-circle"
+             @click="() => add()"
+             :style="{ margin: '0 8px' }"
+          />
+          <a-icon
+             v-if="form.getFieldValue('vmLifecycleOps').length > 1"
+             type="minus-circle"
+             @disabled="form.getFieldValue('vmLifecycleOps').length === 1"
+             @click="() => remove(k)"
+             :style="{ margin: '0 8px' }"
+          />
+        </a-form-item>  
       </a-form>
     </a-modal>    
   </div>
@@ -86,6 +106,7 @@ const placeholderMapping = {
   'applicant': '申请人',
   'maintainer': '维护人'
 }
+let id = 0;
 export default {
   data() {
     return {
@@ -104,10 +125,11 @@ export default {
       searchItemValue: '',
       searchItemKey: 'applicant',
       visible: false,
-      form: {
-
-      },
     };
+  },
+  beforeCreate() {
+    this.form = this.$form.createForm(this, {name: 'application_plan'});
+    this.form.getFieldDecorator('vmLifecycleOps', { initialValue: [0], preserve: true });
   },
   computed: {
     vmLifecycles() {
@@ -115,6 +137,24 @@ export default {
     }
   },
   methods: {
+    add() {
+      const { form } = this;
+      const ops = form.getFieldValue('vmLifecycleOps');
+      const nextOps = ops.concat(id++);
+      form.setFieldsValue({
+        vmLifecycleOps: nextOps,
+      });
+    },
+    remove(k) {
+      const { form } = this;
+      const ops = form.getFieldValue('vmLifecycleOps');
+      if (ops.length === 1) {
+        return;
+      }
+      form.setFieldsValue({
+        vmLifecycleOps: ops.filter(key => key !== k),
+      });
+    },
     openModal() {
       this.visible = true;
     },

@@ -2,7 +2,7 @@ import Vue from "vue";
 import App from "./App.vue";
 import router from "./router";
 import store from "./store";
-import { Layout, Menu, Icon, Button, Table, Card, Descriptions, Input, Select, Tag, Pagination, Modal, Form, Radio } from "ant-design-vue";
+import { Layout, Menu, Icon, Button, Table, Card, Descriptions, Input, Select, Tag, Pagination, Modal, Form, DatePicker } from "ant-design-vue";
 
 Vue.config.productionTip = false;
 Vue.use(Layout);
@@ -18,7 +18,7 @@ Vue.use(Tag);
 Vue.use(Pagination);
 Vue.use(Modal);
 Vue.use(Form);
-Vue.use(Radio);
+Vue.use(DatePicker);
 
 
 new Vue({
