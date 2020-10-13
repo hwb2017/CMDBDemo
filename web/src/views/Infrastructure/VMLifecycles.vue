@@ -12,7 +12,7 @@
           </a-select>
         </a-input>
         <a-icon type="search" :style="{ fontSize: '28px', color: '#08c', margin: '2px 8px'}"/>
-        <a-button type="primary" @click="openModal">添加</a-button>
+        <a-button type="primary" @click="openModal('add')">添加</a-button>
     </div>  
     <a-card
       style="width:100%"
@@ -24,19 +24,19 @@
       :key="item._id"
     >
       <a-button-group slot="extra">
-        <a-button type="primary" size="small" icon="edit"></a-button>
+        <a-button type="primary" size="small" icon="edit" @click="openModal('edit')"></a-button>
         <a-button type="danger" size="small" icon="delete"></a-button>
       </a-button-group>
       <div v-if="key == 'tab1'">
         <a-descriptions layout="vertical">
           <a-descriptions-item label="申请人">
-            {{ item.Applicant }}
+            {{ item.applicant }}
           </a-descriptions-item>
           <a-descriptions-item label="维护者">
-            {{ item.Maintainer }}
+            {{ item.maintainer }}
           </a-descriptions-item>
           <a-descriptions-item label="申请到期时间">
-            {{ item.VMLifecycleRules[0].actiontime }}
+            {{ item.vmlifecyclerules[0].actiontime }}
           </a-descriptions-item>         
         </a-descriptions>
       </div>
@@ -44,7 +44,7 @@
         关联主机信息...
       </div>
     </a-card>
-    <a-modal v-model="visible" title="添加申请计划" @ok="handleOk">
+    <a-modal v-model="visible" :title="modalTitle" @ok="handleOk">
       <a-form layout='vertical' :form="form">
         <a-form-item label='申请人'>
           <a-input
@@ -65,7 +65,7 @@
           v-for="(k,index) in form.getFieldValue('vmLifecycleOps')"
           :key="k"
           :required=false
-          :label="index === 0 ? 生命周期策略 : ''"
+          :label="index === 0 ? '生命周期策略' : ''"
         >
           <a-select default-value="stop" style="width: 100px">
             <a-select-option value="stop">停机</a-select-option>
@@ -73,7 +73,7 @@
           </a-select>
           <a-date-picker
             v-decorator="[
-              'date-time-picker', 
+              `date-time-picker[${k}]`, 
               {
                 rules: [{ type: 'object', required: true, message: '请选择时间' }],
               }
@@ -125,6 +125,7 @@ export default {
       searchItemValue: '',
       searchItemKey: 'applicant',
       visible: false,
+      modalTitle: '',
     };
   },
   beforeCreate() {
@@ -140,7 +141,7 @@ export default {
     add() {
       const { form } = this;
       const ops = form.getFieldValue('vmLifecycleOps');
-      const nextOps = ops.concat(id++);
+      const nextOps = ops.concat(++id);
       form.setFieldsValue({
         vmLifecycleOps: nextOps,
       });
@@ -155,8 +156,13 @@ export default {
         vmLifecycleOps: ops.filter(key => key !== k),
       });
     },
-    openModal() {
+    openModal(action) {
       this.visible = true;
+      if (action=="add") {
+          this.modalTitle = "添加申请计划"
+      } else if (action=="edit") {
+          this.modalTitle = "编辑申请计划"
+      }
     },
     handleOk(e) {
       console.log(e);
