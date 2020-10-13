@@ -2,21 +2,38 @@ package service
 
 import (
 	"github.com/hwb2017/CMDBDemo/model"
+	"time"
 )
 
 type CreateVMLifecycleRequest struct {
 	Maintainer string `json:"maintainer"`
-	Applicant string `json:"applicant"`
-	VMLifecycleRules []model.VMLifecycleRule `json:"vm_lifecycle_rules"`
-	VMIDs []string `json:"vm_ids"`
+	Applicant string `json:"applicant" binding:"required"`
+	VMLifecycleRules []VMLifecycleRule `json:"vm_lifecycle_rules" binding:"required,dive"`
+	VMIDs []string `json:"vm_ids" binding:"required,dive"`
+}
+
+type VMLifecycleRule struct {
+	Operation string `json:"operation" binding:"required,oneof=stop destroy"`
+	ActionTime time.Time `json:"action_time" binding:"required,datetime=2006-01-02"`
 }
 
 func (s *Service) CreateVMLifecycle(param *CreateVMLifecycleRequest) error{
+	vmLifecycleRules := make([]model.VMLifecycleRule,0)
+	for _, rule := range param.VMLifecycleRules {
+		vmOperation, err := model.ParseVMOperation(rule.Operation)
+		if err != nil {
+			return err
+		}
+		vmLifecycleRules = append(vmLifecycleRules, model.VMLifecycleRule{
+			Operation: vmOperation,
+			ActionTime: rule.ActionTime,
+		})
+	}
 	vmLifecycleID, err := s.dao.CreateVMLifecycle(
     	param.Applicant,
     	param.Maintainer,
     	param.VMIDs,
-    	param.VMLifecycleRules)
+    	vmLifecycleRules)
     if err != nil {
     	return err
 	}

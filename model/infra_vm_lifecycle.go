@@ -13,7 +13,8 @@ import (
 type VMOperation uint32
 
 const (
-	StopOperation VMOperation = iota
+	_ VMOperation = iota
+	StopOperation
 	DestroyOperation
 )
 
@@ -25,7 +26,7 @@ func ParseVMOperation(op string) (VMOperation, error) {
 		return DestroyOperation, nil
 	}
 	var vmOp VMOperation
-	return vmOp, fmt.Errorf("not a valid vm operation")
+	return vmOp, fmt.Errorf("%s not a valid vm operation", op)
 }
 
 type VMLifecycleCollection struct {
@@ -52,6 +53,7 @@ func (v *VMLifecycleCollection) setup() {
 }
 
 func (v *VMLifecycleCollection) Create(client * mongo.Client, doc VMLifecycle) (resultID string, err error) {
+	v.setup()
 	collection := v.mongodbCollection(client)
 	result, err := collection.InsertOne(context.TODO(), doc)
 	if err != nil {

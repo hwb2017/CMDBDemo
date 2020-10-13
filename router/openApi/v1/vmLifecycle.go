@@ -9,32 +9,18 @@ import (
 	"github.com/hwb2017/CMDBDemo/service"
 )
 
-type VMOperation int
-
-const (
-	Stop VMOperation = iota
-	Destroy
-)
-
-type VMLifecycleRule struct {
-	Operation VMOperation `json:"operation"`
-	ActionTime string `json:"actionTime"`
-}
-
-type VMLifecycleRequest struct {
-	Maintainer string `json:"maintainer"`
-	Applicant string `json:"applicant"`
-	VMLifecycleRules []VMLifecycleRule `json:"vmLifecycleRules"`
-	VMIDs []string `json:"vmIDs"`
-}
-
 // CreateVMLifecycle create vmLifecycleStrategy and association with virtual machines
 func CreateVMLifecycle(c *gin.Context) {
 	vmLifecycleReq := &service.CreateVMLifecycleRequest{}
-    c.ShouldBindJSON(&vmLifecycleReq)
 	response := app.NewResponse(c)
 	svc := service.New()
-	err := svc.CreateVMLifecycle(vmLifecycleReq)
+    err := app.BindAndValid(c, vmLifecycleReq)
+    if err != nil {
+		global.Logger.Errorf("Invalid param err: %v", err)
+		response.ToErrorResponse(errcode.InvalidParams)
+		return
+	}
+	err = svc.CreateVMLifecycle(vmLifecycleReq)
 	if err != nil {
 		global.Logger.Errorf("CreateVMLifecycle err: %v", err)
 		response.ToErrorResponse(errcode.ErrorCreateVMLifecycle)

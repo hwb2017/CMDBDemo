@@ -16,7 +16,7 @@
     </div>  
     <a-card
       style="width:100%"
-      :title="`${item.Applicant}的主机申请(${item.CreationTime})`"
+      :title="`${item.applicant}的主机申请(${item.createtime})`"
       :tab-list="tabList"
       :active-tab-key="key"
       @tabChange="key => onTabChange(key, 'key')"
