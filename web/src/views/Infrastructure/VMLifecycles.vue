@@ -14,46 +14,31 @@
         <a-icon type="search" :style="{ fontSize: '28px', color: '#08c', margin: '2px 8px'}"/>
         <a-button type="primary" @click="openModal('add')">添加</a-button>
     </div>  
-    <a-card
-      style="width:100%"
-      :title="`${item.applicant}的主机申请(${item.createtime})`"
-      :tab-list="tabList"
-      :active-tab-key="key"
-      @tabChange="key => onTabChange(key, 'key')"
-      v-for="item in vmLifecycles"
-      :key="item._id"
-    >
-      <a-button-group slot="extra">
-        <a-button type="primary" size="small" icon="edit" @click="openModal('edit')"></a-button>
-        <a-button type="danger" size="small" icon="delete"></a-button>
+    <a-table
+      :columns="columns"
+      :data-source="vmLifecycles"
+      :row-key="record => record._id"
+      :pagination=false
+    >  
+      <div slot="ApplicationPlanTitle" slot-scope="record">
+        {{ record.applicant }}的主机申请({{ record.createtime | datefmt }})
+      </div>
+      <div slot="Deadline" slot-scope="record">
+        {{ record.vmlifecyclerules[0].actiontime | datefmt }}
+      </div>
+      <a-button-group slot="Operation" slot-scope="record">
+        <a-button type="primary" size="small" icon="edit" @click="openModal('edit', record)"></a-button>
+        <a-button type="danger" size="small" icon="delete" @click="deleteApplicationPlan(record._id)"></a-button>
       </a-button-group>
-      <div v-if="key == 'tab1'">
-        <a-descriptions layout="vertical">
-          <a-descriptions-item label="申请人">
-            {{ item.applicant }}
-          </a-descriptions-item>
-          <a-descriptions-item label="维护者">
-            {{ item.maintainer }}
-          </a-descriptions-item>
-          <a-descriptions-item label="申请到期时间">
-            {{ item.vmlifecyclerules[0].actiontime }}
-          </a-descriptions-item>         
-        </a-descriptions>
-      </div>
-      <div v-else>
-        关联主机信息...
-      </div>
-    </a-card>
+    </a-table>
     <a-modal v-model="visible" :title="modalTitle" @ok="handleOk">
       <a-form layout='vertical' :form="form">
         <a-form-item label='申请人'>
-          <a-input
-            v-decorator="[
-              'applicant',
-              {
-                rules: [{ required: true, message: '请输入申请人名称' }],
-              }
-            ]"
+          <a-input v-decorator="[
+            'applicant',
+            {
+              rules: [{ required: true, message: '请输入申请人名称' }],
+            }]"
           />
         </a-form-item>
         <a-form-item label='维护人'>
@@ -62,18 +47,21 @@
           />
         </a-form-item>
         <a-form-item 
-          v-for="(k,index) in form.getFieldValue('vmLifecycleOps')"
+          v-for="(k,index) in form.getFieldValue('vmLifecycleRuleKeys')"
           :key="k"
           :required=false
           :label="index === 0 ? '生命周期策略' : ''"
         >
-          <a-select default-value="stop" style="width: 100px">
+          <a-select 
+            style="width: 100px"
+            v-decorator="[`operation[${k}]`]"
+          >
             <a-select-option value="stop">停机</a-select-option>
             <a-select-option value="destroy">销毁</a-select-option>
           </a-select>
           <a-date-picker
             v-decorator="[
-              `date-time-picker[${k}]`, 
+              `actionTime[${k}]`, 
               {
                 rules: [{ type: 'object', required: true, message: '请选择时间' }],
               }
@@ -88,13 +76,31 @@
              :style="{ margin: '0 8px' }"
           />
           <a-icon
-             v-if="form.getFieldValue('vmLifecycleOps').length > 1"
+             v-if="form.getFieldValue('vmLifecycleRuleKeys').length > 1"
              type="minus-circle"
-             @disabled="form.getFieldValue('vmLifecycleOps').length === 1"
+             @disabled="form.getFieldValue('vmLifecycleRuleKeys').length === 1"
              @click="() => remove(k)"
              :style="{ margin: '0 8px' }"
           />
         </a-form-item>  
+        <a-form-item label="关联主机">
+          <a-select
+            mode="multiple"
+            style="width: 100%"
+            placeholder="请输入主机ID精确搜索"
+            v-decorator="['vm_ids', { initialValue: [] }]"
+            option-label-prop="label"
+            :filter-option="false"
+            :not-found-content="fetching ? undefined : null"
+            @search="searchVMByID"
+          >
+            <a-spin v-if="fetching" slot="notFoundContent" size="small" />
+            <a-select-option v-for="vm in filteredVMs" :key="vm._id" :label="vm._id">
+              <p><strong>实例ID: </strong>{{ vm._id }}</p>
+              <p><strong>实例名称: </strong>{{ vm.instance_name }}</p>
+            </a-select-option>
+          </a-select>
+        </a-form-item>
       </a-form>
     </a-modal>    
   </div>
@@ -102,80 +108,193 @@
 
 <script>
 import { mapActions } from 'vuex';
+import moment from "moment";
+import debounce from "lodash/debounce";
 const placeholderMapping = {
   'applicant': '申请人',
   'maintainer': '维护人'
 }
-let id = 0;
+const columns = [
+  {
+    key: 'ApplicationPlanTitle',
+    title: '申请计划名称',
+    scopedSlots: { customRender: 'ApplicationPlanTitle' },
+  },
+  {
+    key: 'Applicant',
+    dataIndex: 'applicant',
+    title: '申请人',
+  },
+  {
+    key: 'Maintainer',
+    dataIndex: 'maintainer',
+    title: '维护人',
+  },
+  {
+    key: 'Deadline',
+    title: '申请到期时间',
+    scopedSlots: { customRender: 'Deadline' },
+  },
+  {
+    key: 'Operation',
+    title: '操作',
+    scopedSlots: { customRender: 'Operation' },
+  }
+]
 export default {
   data() {
+    this.searchVMByID = debounce(this.searchVMByID);
+    this.lastFetchId = 0;
     return {
-      tabList: [
-        {
-          key: 'tab1',
-          tab: '基本信息',
-        },
-        {
-          key: 'tab2',
-          tab: '关联主机',
-        },
-      ],
-      key: 'tab1',
       searchItemPlaceholder: '请输入申请人',
       searchItemValue: '',
       searchItemKey: 'applicant',
       visible: false,
       modalTitle: '',
+      modalType: '',
+      columns,
+      filteredVMs: [],
+      fetching: false
     };
   },
   beforeCreate() {
     this.form = this.$form.createForm(this, {name: 'application_plan'});
-    this.form.getFieldDecorator('vmLifecycleOps', { initialValue: [0], preserve: true });
+    this.form.getFieldDecorator('vmLifecycleRuleKeys', { initialValue: [0], preserve: true });
+    this.form.getFieldDecorator('id', { preserve: true });
+  },
+  watch: {
+    vmLifecycles() {
+       this.getVMLifecycles();
+    }
   },
   computed: {
     vmLifecycles() {
       return this.$store.state.infra.vmLifecycles
-    }
+    },
   },
   methods: {
     add() {
       const { form } = this;
-      const ops = form.getFieldValue('vmLifecycleOps');
-      const nextOps = ops.concat(++id);
+      const keys = form.getFieldValue('vmLifecycleRuleKeys');
+      const nextID = Math.max(...form.getFieldValue('vmLifecycleRuleKeys'))+1;
+      const nextKeys = keys.concat(nextID);
       form.setFieldsValue({
-        vmLifecycleOps: nextOps,
+        vmLifecycleRuleKeys: nextKeys,
       });
     },
     remove(k) {
       const { form } = this;
-      const ops = form.getFieldValue('vmLifecycleOps');
-      if (ops.length === 1) {
+      const keys = form.getFieldValue('vmLifecycleRuleKeys');
+      if (keys.length === 1) {
         return;
       }
       form.setFieldsValue({
-        vmLifecycleOps: ops.filter(key => key !== k),
+        vmLifecycleRuleKeys: keys.filter(key => key !== k),
       });
     },
-    openModal(action) {
+    openModal(action, currentRow) {
       this.visible = true;
+      this.filteredVMs = [];
+      const { form } = this; 
       if (action=="add") {
           this.modalTitle = "添加申请计划"
+          this.modalType = "add"
+          form.resetFields();    
       } else if (action=="edit") {
           this.modalTitle = "编辑申请计划"
+          this.modalType = "edit"
+          this.$nextTick(() => {
+            form.setFieldsValue({ 
+              id: currentRow._id,
+              applicant: currentRow.applicant,
+              maintainer: currentRow.maintainer,
+              vm_ids: currentRow.vmids
+            });
+            var vmLifecycleRuleItems = {};
+            var vmLifecycleRuleKeys = [];
+            for (let i = 0; i < currentRow.vmlifecyclerules.length; i++) {
+              form.getFieldDecorator(`operation[${i}]`);
+              form.getFieldDecorator(`actionTime[${i}]`);
+              vmLifecycleRuleItems[`operation[${i}]`] = currentRow.vmlifecyclerules[i].operation;
+              vmLifecycleRuleItems[`actionTime[${i}]`] = moment.unix(currentRow.vmlifecyclerules[i].actiontime);
+              vmLifecycleRuleKeys.push(i);
+            }
+            form.setFieldsValue({ vmLifecycleRuleKeys: vmLifecycleRuleKeys });
+            form.setFieldsValue(vmLifecycleRuleItems);
+          });
+          for (let vmid of currentRow.vmids) {
+            this.getVirtualMachine(vmid)
+            .then(body => {
+              this.filteredVMs.push({
+                _id: body.data.data[0]["_id"],
+                instance_name: body.data.data[0]["instance_name"]
+              })
+            })
+          };
       }
     },
-    handleOk(e) {
-      console.log(e);
+    handleOk() {
+      const { form } = this;
+      const vmLifecycleRules = [];
+      for ( let i of form.getFieldValue('vmLifecycleRuleKeys')) {
+          const vmLifecycleRule = {
+            "operation": form.getFieldValue(`operation[${i}]`),
+            "action_time": form.getFieldValue(`actionTime[${i}]`).unix()
+          };
+          vmLifecycleRules.push(vmLifecycleRule);
+      }
+      const payload = {
+        "maintainer": form.getFieldValue('maintainer'),
+        "applicant": form.getFieldValue('applicant'),
+        "vm_lifecycle_rules": vmLifecycleRules,
+        "vm_ids": form.getFieldValue('vm_ids'),
+      };
+      const createPayload = payload, updatePayload = payload;
+      updatePayload["id"] = form.getFieldValue('id');
+      if (this.modalType == "add") {
+          this.createApplicationPlan(createPayload);
+      } else if (this.modalType == "edit") {
+          this.updateApplicationPlan(updatePayload);
+      }
       this.visible = false;
+      form.resetFields();
+      this.filteredVMs = [];
     },
-    onTabChange(key, type) {
-      this[type] = key;
+    createApplicationPlan(payload) {
+      this.createVMLifecycles(payload);
+    },
+    deleteApplicationPlan(id) {
+      this.deleteVMLifecycles(id);
+      this.getVMLifecycles();
+    },  
+    updateApplicationPlan(payload) {
+      this.updateVMLifecycles(payload);
     },
     changePlaceholder(value) {
       this.searchItemPlaceholder = `请输入${placeholderMapping[value]}`;
     },
+    searchVMByID(value) {
+      this.lastFetchId += 1;
+      const fetchId = this.lastFetchId;
+      this.fetching = true;
+      this.getVirtualMachine(value)
+        .then(body => {
+          if (fetchId !== this.lastFetchId) {
+            return;
+          }
+          this.filteredVMs.push({
+            _id: body.data.data[0]["_id"],
+            instance_name: body.data.data[0]["instance_name"]
+          })
+          this.fetching = false;
+        });
+    },
     ...mapActions({
-      'getVMLifecycles': 'infra/getVMLifecycles'
+      'getVMLifecycles': 'infra/getVMLifecycles',
+      'createVMLifecycles': 'infra/createVMLifecycles',
+      'updateVMLifecycles': 'infra/updateVMLifecycles',
+      'deleteVMLifecycles': 'infra/deleteVMLifecycles',
+      'getVirtualMachine': 'infra/getVirtualMachine'
     })
   },
   mounted: function() {

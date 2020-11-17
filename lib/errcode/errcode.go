@@ -49,6 +49,8 @@ func (e *Error) StatusCode() int {
 		return http.StatusInternalServerError
 	case InvalidParams.Code():
 		return http.StatusBadRequest
+	case ParseParamsError.Code():
+		return http.StatusBadRequest
 	}
 	return http.StatusInternalServerError
 }

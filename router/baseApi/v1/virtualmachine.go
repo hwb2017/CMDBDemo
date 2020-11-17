@@ -19,6 +19,10 @@ type ListVMBasicViewReq struct {
 	PageSize int `form:"pageSize"`
 }
 
+type GetVMBasicViewReq struct {
+	ID string `form:"id"`
+}
+
 func ListVMBasicView(c * gin.Context) {
 	response := app.NewResponse(c)
 	svc := service.New()
@@ -65,5 +69,29 @@ func ListVMBasicView(c * gin.Context) {
 		return
 	}
 	response.ToResponseList(vms, totalRows)
+	return
+}
+
+func GetVMBasicView(c * gin.Context) {
+	response := app.NewResponse(c)
+	svc := service.New()
+	var getVMBasicViewReq GetVMBasicViewReq
+	err := c.ShouldBindQuery(&getVMBasicViewReq)
+	if err != nil {
+		global.Logger.Errorf("Get query string from url err: %v", err)
+		response.ToErrorResponse(errcode.ErrorListVMBasicView)
+		return
+	}
+	queryOptions := &model.QueryOptions{}
+	filter := make(bson.M, 1)
+	filter["_id"] = getVMBasicViewReq.ID
+	queryOptions.WithFilter(filter)
+	vm, err := svc.ListVMBasicView(queryOptions)
+	if err != nil {
+		global.Logger.Errorf("GetVMBasicView err: %v", err)
+		response.ToErrorResponse(errcode.ErrorListVMBasicView)
+		return
+	}
+	response.ToResponse(vm)
 	return
 }

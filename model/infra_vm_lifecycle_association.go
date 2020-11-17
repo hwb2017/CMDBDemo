@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"github.com/hwb2017/CMDBDemo/utils"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -22,11 +23,44 @@ func (v *VMLifecycleAssociationCollection) setup() {
 
 func (v *VMLifecycleAssociationCollection) BulkCreate(client *mongo.Client, docs []VMLifecycleAssociation) error {
 	v.setup()
-	vmLifecycleAssociationCollection := v.mongodbCollection(client)
+	collection := v.mongodbCollection(client)
 	documents := utils.InterfaceSlice(docs)
-	_, err := vmLifecycleAssociationCollection.InsertMany(context.TODO(), documents)
+	_, err := collection.InsertMany(context.TODO(), documents)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (v *VMLifecycleAssociationCollection) BulkUpdate(client *mongo.Client, vmLifecycleID string, vmIDs []string) error {
+	v.setup()
+	collection := v.mongodbCollection(client)
+	_, err := collection.DeleteMany(context.TODO(), bson.D{{
+		"vmlifecycleid", vmLifecycleID,
+	}})
+	if err != nil {
+		return err
+	}
+	docs := make([]VMLifecycleAssociation,0)
+	for _, v := range vmIDs {
+		docs = append(docs, VMLifecycleAssociation{
+			VMLifecycleID: vmLifecycleID,
+			VMID: v,
+		})
+	}
+	documents := utils.InterfaceSlice(docs)
+	_, err = collection.InsertMany(context.TODO(), documents)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *VMLifecycleAssociationCollection) DeleteByVMLifecycleID(client *mongo.Client, id string) error {
+	v.setup()
+	collection := v.mongodbCollection(client)
+	_, err := collection.DeleteMany(context.TODO(), bson.D{{
+		"vmlifecycleid", id,
+	}})
+	return err
 }

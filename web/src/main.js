@@ -2,7 +2,8 @@ import Vue from "vue";
 import App from "./App.vue";
 import router from "./router";
 import store from "./store";
-import { Layout, Menu, Icon, Button, Table, Card, Descriptions, Input, Select, Tag, Pagination, Modal, Form, DatePicker } from "ant-design-vue";
+import { Layout, Menu, Icon, Button, Table, Card, Descriptions, Input, Select, Tag, Pagination, Modal, Form, DatePicker, Spin } from "ant-design-vue";
+import moment from "moment";
 
 Vue.config.productionTip = false;
 Vue.use(Layout);
@@ -19,7 +20,11 @@ Vue.use(Pagination);
 Vue.use(Modal);
 Vue.use(Form);
 Vue.use(DatePicker);
+Vue.use(Spin);
 
+Vue.filter('datefmt', function(input,fmtstr) {
+  return moment.unix(input).format(fmtstr);
+})
 
 new Vue({
   router,

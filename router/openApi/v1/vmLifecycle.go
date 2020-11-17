@@ -11,19 +11,47 @@ import (
 
 // CreateVMLifecycle create vmLifecycleStrategy and association with virtual machines
 func CreateVMLifecycle(c *gin.Context) {
-	vmLifecycleReq := &service.CreateVMLifecycleRequest{}
 	response := app.NewResponse(c)
 	svc := service.New()
-    err := app.BindAndValid(c, vmLifecycleReq)
-    if err != nil {
+	vmLifecycleReq := &service.CreateVMLifecycleRequest{}
+	valid, err := app.BindJSONAndValid(c, vmLifecycleReq)
+    if !valid {
 		global.Logger.Errorf("Invalid param err: %v", err)
 		response.ToErrorResponse(errcode.InvalidParams)
+		return
+	} else if err != nil {
+		global.Logger.Errorf("Parse param err: %v", err)
+		response.ToErrorResponse(errcode.ParseParamsError)
 		return
 	}
 	err = svc.CreateVMLifecycle(vmLifecycleReq)
 	if err != nil {
 		global.Logger.Errorf("CreateVMLifecycle err: %v", err)
 		response.ToErrorResponse(errcode.ErrorCreateVMLifecycle)
+		return
+	}
+	response.ToResponse(gin.H{})
+	return
+}
+
+func UpdateVMLifecycle(c *gin.Context) {
+	response := app.NewResponse(c)
+	svc := service.New()
+	vmLifecycleReq := &service.UpdateVMLifecycleRequest{}
+	valid, err := app.BindJSONAndValid(c, vmLifecycleReq)
+	if !valid {
+		global.Logger.Errorf("Invalid param err: %v", err)
+		response.ToErrorResponse(errcode.InvalidParams)
+		return
+	} else if err != nil {
+		global.Logger.Errorf("Parse param err: %v", err)
+		response.ToErrorResponse(errcode.ParseParamsError)
+		return
+	}
+	err = svc.UpdateVMLifecycle(vmLifecycleReq)
+	if err != nil {
+		global.Logger.Errorf("UpdateVMLifecycle err: %v", err)
+		response.ToErrorResponse(errcode.ErrorUpdateVMLifecycle)
 		return
 	}
 	response.ToResponse(gin.H{})
@@ -50,5 +78,47 @@ func ListVMLifecycle(c *gin.Context) {
 		return
 	}
 	response.ToResponseList(results, totalRows)
+	return
+}
+
+func GetVMLifecycle(c *gin.Context) {
+	response := app.NewResponse(c)
+	svc := service.New()
+	vmLifecycleReq := &service.GetVMLifecycleRequest{}
+	valid, err := app.BindQueryAndValid(c, vmLifecycleReq)
+	if !valid {
+		global.Logger.Errorf("Invalid param err: %v", err)
+		response.ToErrorResponse(errcode.InvalidParams)
+		return
+	}
+	result, err := svc.GetVMLifecycle(vmLifecycleReq.VMLifecycleID)
+	if err != nil {
+		global.Logger.Errorf("GetVMLifecycle err: %v", err)
+		response.ToErrorResponse(errcode.ErrorGetVMLifecycle)
+		return
+	}
+	response.ToResponse(result)
+	return
+}
+
+func DeleteVMLifecycle(c *gin.Context) {
+	response := app.NewResponse(c)
+	svc := service.New()
+	vmLifecycleReq := &service.DeleteVMLifecycleRequest{}
+	valid, err := app.BindQueryAndValid(c, vmLifecycleReq)
+	if !valid {
+		global.Logger.Errorf("Invalid param err: %v", err)
+		response.ToErrorResponse(errcode.InvalidParams)
+		return
+	}
+	deletedCount, err := svc.DeleteVMLifecycle(vmLifecycleReq.VMLifecycleID)
+	if err != nil {
+		global.Logger.Errorf("DeleteVMLifecycle err: %v", err)
+		response.ToErrorResponse(errcode.ErrorDeleteVMLifecycle)
+		return
+	}
+	response.ToResponse(gin.H{
+		"deleted_count": deletedCount,
+	})
 	return
 }
