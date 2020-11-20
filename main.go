@@ -22,6 +22,7 @@ func main() {
      defer gracefulExit()
 
      //cronjob.SyncInstances()
+     //cronjob.ScanAndExecuteVMLifecycle()
      r := router.InitRouter()
      r.Run(global.ServerConfiguration.Host)
 }

@@ -111,10 +111,23 @@ func (v *VMLifecycleCollection) ListWithAssociation(client *mongo.Client, queryO
 			{"from", "vm_lifecycle_association"},
 			{"localField", "_id"},
 			{"foreignField", "VMLifecycleID"},
-			{"as", "associated_vm_ids"},
+			{"as", "associated_vm_docs"},
 		},
 		}}
-	extendPipelines = append(extendPipelines, lookupStage)
+	addFieldsStage := bson.D{
+		{"$addFields",bson.D{
+			{
+				"associated_vm_ids",bson.D{
+				{"$map",bson.D{
+					{"input","$associated_vm_docs"},
+					{"as","vm_doc"},
+					{"in","$$vm_doc.vmid"},
+				}},
+			},
+			},
+		},
+		}}
+	extendPipelines = append(extendPipelines, lookupStage, addFieldsStage)
 	queryOptions.WithExtendAggregationPipelineStages(extendPipelines)
 	cursor, err := v.aggregate(collection, queryOptions)
 	if err != nil {
@@ -132,10 +145,23 @@ func (v *VMLifecycleCollection) GetWithAssociation(client *mongo.Client, id stri
 			{"from", "vm_lifecycle_association"},
 			{"localField", "_id"},
 			{"foreignField", "VMLifecycleID"},
-			{"as", "associated_vm_ids"},
+			{"as", "associated_vm_docs"},
 		},
 		}}
-	extendPipelines = append(extendPipelines, lookupStage)
+	addFieldsStage := bson.D{
+		{"$addFields",bson.D{
+			{
+				"associated_vm_ids",bson.D{
+				{"$map",bson.D{
+					{"input","$associated_vm_docs"},
+					{"as","vm_doc"},
+					{"in","$$vm_doc.vmid"},
+				}},
+			},
+			},
+		},
+		}}
+	extendPipelines = append(extendPipelines, lookupStage, addFieldsStage)
 	queryOptions := &QueryOptions{}
 	objectId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
